@@ -1,0 +1,5 @@
+# Kernel build request
+# Change any line in this file and push to ask CI to build that version.
+version=6.18.15
+arch=x86_64
+diagnostic=false
