@@ -3,4 +3,4 @@
 version=7.2.13
 arch=x86_64
 diagnostic=false
-# run 9: APK signing key configured + Debian 11 archive source
+# run 10: APK + GPG signing secrets configured
