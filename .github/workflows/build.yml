@@ -186,6 +186,9 @@ jobs:
         with:
           fetch-tags: true
 
+      - name: Fetch External Patch Sources
+        run: bash .github/scripts/fetch_external_sources.sh
+
       - name: Build and Install Pahole
         run: sudo bash .github/scripts/build_pahole.sh "$RUNNER_TEMP/dwarves-v1.31"
 

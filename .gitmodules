@@ -1,0 +1,14 @@
+[submodule "vendor/linux-debian"]
+	path = vendor/linux-debian
+	url = https://salsa.debian.org/kernel-team/linux.git
+	branch = master
+	shallow = true
+[submodule "vendor/xanmod-patches"]
+	path = vendor/xanmod-patches
+	url = https://gitlab.com/xanmod/linux-patches.git
+	branch = master
+	shallow = true
+[submodule "vendor/amneziawg"]
+	path = vendor/amneziawg
+	url = https://github.com/amnezia-vpn/amneziawg-linux-kernel-module.git
+	shallow = true

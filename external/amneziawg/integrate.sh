@@ -64,12 +64,25 @@ if [ "$kconfig_anchor_count" -ne 1 ]; then
   exit 1
 fi
 
-temp_dir=$(mktemp -d)
-trap 'rm -rf "$temp_dir"' EXIT
-source_dir=$temp_dir/source
+repo_root=$(cd -- "$script_dir/../.." && pwd)
+source_dir=$repo_root/vendor/amneziawg
 
-git -c advice.detachedHead=false clone --quiet \
-  --branch "$AMNEZIAWG_TAG" --depth=1 "$AMNEZIAWG_REPOSITORY" "$source_dir"
+if [ ! -e "$source_dir/.git" ]; then
+  printf 'error: AmneziaWG submodule is not initialized: %s\n' "$source_dir" >&2
+  printf 'hint: run .github/scripts/fetch_external_sources.sh\n' >&2
+  exit 1
+fi
+
+actual_repository=$(git -C "$source_dir" config --get remote.origin.url || true)
+if [ "$actual_repository" != "$AMNEZIAWG_REPOSITORY" ]; then
+  printf 'warning: submodule vendor/amneziawg points at %s, expected %s\n' \
+    "${actual_repository:-<unknown>}" "$AMNEZIAWG_REPOSITORY" >&2
+fi
+
+git -C "$source_dir" fetch --quiet --depth=1 origin \
+  "+refs/tags/$AMNEZIAWG_TAG:refs/tags/$AMNEZIAWG_TAG"
+git -C "$source_dir" checkout --quiet --detach --force "$AMNEZIAWG_TAG"
+
 actual_commit=$(git -C "$source_dir" rev-parse HEAD)
 if [ "$actual_commit" != "$AMNEZIAWG_COMMIT" ]; then
   printf 'error: AmneziaWG tag %s resolved to %s, expected %s\n' \

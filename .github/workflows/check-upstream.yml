@@ -25,6 +25,11 @@ on:
         required: false
         default: true
         type: boolean
+      check_7_2:
+        description: "Check Linux 7.2"
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   prepare:
@@ -42,15 +47,17 @@ jobs:
           CHECK_6_12: ${{ inputs.check_6_12 }}
           CHECK_6_18: ${{ inputs.check_6_18 }}
           CHECK_7_1: ${{ inputs.check_7_1 }}
+          CHECK_7_2: ${{ inputs.check_7_2 }}
         run: |
           if [ "$EVENT_NAME" = "schedule" ]; then
-            selected_series=("6.12" "6.18" "7.1")
+            selected_series=("6.12" "6.18" "7.1" "7.2")
             force_build=false
           else
             selected_series=()
             [ "$CHECK_6_12" = "true" ] && selected_series+=("6.12")
             [ "$CHECK_6_18" = "true" ] && selected_series+=("6.18")
             [ "$CHECK_7_1" = "true" ] && selected_series+=("7.1")
+            [ "$CHECK_7_2" = "true" ] && selected_series+=("7.2")
             force_build="$FORCE_BUILD_INPUT"
           fi
 

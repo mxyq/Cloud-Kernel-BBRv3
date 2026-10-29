@@ -35,9 +35,20 @@ script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(cd -- "$script_dir/../.." && pwd)
 work_dir=$(realpath -m "$work_dir_arg")
 kernel_dir=$work_dir/linux
-debian_dir=$work_dir/linux-debian
-xanmod_dir=$work_dir/linux-xanmod-patches
+# Both patch sources are Git submodules declared in .gitmodules, so the
+# repository -- not this script -- owns where they come from.
+debian_dir=$repo_root/vendor/linux-debian
+xanmod_dir=$repo_root/vendor/xanmod-patches
 source_archive=$work_dir/linux-$kernel_version.tar.xz
+
+require_submodule() {
+  local dir=$1 rel=$2
+  if [ ! -e "$dir/.git" ]; then
+    printf 'error: submodule %s is not initialized (run .github/scripts/fetch_external_sources.sh)\n' \
+      "$rel" >&2
+    exit 1
+  fi
+}
 
 for required_dir in \
   "$repo_root/kernel_patches/$series" \
@@ -49,12 +60,13 @@ for required_dir in \
 done
 
 mkdir -p "$work_dir"
-for path in "$kernel_dir" "$debian_dir" "$xanmod_dir"; do
-  if [ -e "$path" ]; then
-    printf 'error: work path already exists: %s\n' "$path" >&2
-    exit 1
-  fi
-done
+if [ -e "$kernel_dir" ]; then
+  printf 'error: work path already exists: %s\n' "$kernel_dir" >&2
+  exit 1
+fi
+
+require_submodule "$debian_dir" vendor/linux-debian
+require_submodule "$xanmod_dir" vendor/xanmod-patches
 
 printf 'Downloading Linux %s source...\n' "$kernel_version"
 curl --fail --location --retry 3 \
@@ -64,12 +76,16 @@ tar -xJf "$source_archive" -C "$work_dir"
 mv "$work_dir/linux-$kernel_version" "$kernel_dir"
 rm -f "$source_archive"
 
-printf 'Cloning Debian kernel tag debian/%s-1...\n' "$kernel_version"
-git clone --branch "debian/$kernel_version-1" --depth=1 \
-  https://salsa.debian.org/kernel-team/linux.git "$debian_dir"
+printf 'Checking out Debian tag debian/%s-1 in %s...\n' "$kernel_version" "$debian_dir"
+if ! git -C "$debian_dir" fetch --depth=1 origin \
+    "+refs/tags/debian/$kernel_version-1:refs/tags/debian/$kernel_version-1"; then
+  printf 'error: Debian tag debian/%s-1 not found in the kernel-team repository\n' \
+    "$kernel_version" >&2
+  exit 1
+fi
+git -C "$debian_dir" checkout --detach --force "debian/$kernel_version-1"
 
-printf 'Cloning XanMod patch collection...\n'
-git clone --depth=1 https://gitlab.com/xanmod/linux-patches.git "$xanmod_dir"
+printf 'Using XanMod patch collection from submodule %s\n' "$xanmod_dir"
 
 if [ "$series" = "6.18" ] && dpkg --compare-versions "$kernel_version" lt "6.18.33"; then
   xanmod_ref=0bc9e62789c65ae9b2cf8910773f892a51d9e896
