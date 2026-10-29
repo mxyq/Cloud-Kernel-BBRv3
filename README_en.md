@@ -102,7 +102,7 @@ export CLOUD_KERNEL_GPG_FINGERPRINT="AFD6BDBFEBB9105077C4CA41399953F30E337E5E"
 # Interactive installation (recommended for new users)
 ./install-kernel.sh
 
-# Automatically install the latest kernel from the default 7.1 series
+# Automatically install the newest release
 ./install-kernel.sh install
 
 # Install the latest kernel from the 6.12 series with an English interface
@@ -125,7 +125,7 @@ Options and commands:
 - Global options
   - `-l, --language`: Set language (zh/en), defaults to Chinese
 - Commands
-  - `install`: Directly install the latest kernel in the selected series; defaults to 7.1
+  - `install`: Directly install the latest kernel in the selected series; defaults to the newest release
   - `help`: Display help information
 - `install` options
   - `-s, --series, --kernel-series`: Select a kernel series (`6.12` or `7.2`)
@@ -185,7 +185,7 @@ RPM, APK, and Arch Linux packages do not currently support Secure Boot. Keep the
 After reboot:
 
 ```bash
-uname -r                                # Should show the suffixed version, e.g. 7.1.6-cloudy
+uname -r                                # Should show the suffixed version, e.g. 7.2.13-cloudy
 sysctl net.ipv4.tcp_congestion_control  # Should be bbr (BBRv3, built in and default)
 sysctl net.core.default_qdisc           # Should be fq
 ```

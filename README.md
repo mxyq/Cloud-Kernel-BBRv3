@@ -184,7 +184,7 @@ RPM、APK 与 Arch Linux 软件包当前不支持 Secure Boot；请保留发行�
 重启后执行：
 
 ```bash
-uname -r                                # 应显示带后缀的内核版本，如 7.1.6-cloudy
+uname -r                                # 应显示带后缀的内核版本，如 7.2.13-cloudy
 sysctl net.ipv4.tcp_congestion_control  # 应为 bbr（即 BBRv3，已内置并设为默认）
 sysctl net.core.default_qdisc           # 应为 fq
 ```
