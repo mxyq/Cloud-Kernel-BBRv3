@@ -124,9 +124,33 @@ fi
 cp -R "$xanmod_net_dir" "$kernel_dir/patches/net"
 cp -R "$repo_root/kernel_patches/$series" "$kernel_dir/patches/custom"
 
+# Some XanMod patches target kernel APIs that a given series no longer has.
+# xanmod_excludes/<series>.txt lists the patches to skip, one relative path
+# per line, so a series can drop a patch without patching upstream code.
+xanmod_exclude_pattern=''
+xanmod_exclude_file=$repo_root/xanmod_excludes/$series.txt
+if [ -f "$xanmod_exclude_file" ]; then
+  xanmod_exclude_pattern=$(
+    sed -e 's/#.*//' -e '/^[[:space:]]*$/d' "$xanmod_exclude_file" \
+      | sed -e 's/[.[\*^$()+?{|]/\\&/g' | paste -sd'|' -
+  )
+fi
+
+xanmod_patches=$(
+  find "$kernel_dir/patches/net" -type f -name '*.patch' -printf 'net/%P\n' | sort
+)
+if [ -n "$xanmod_exclude_pattern" ]; then
+  excluded=$(printf '%s\n' "$xanmod_patches" | grep -E "$xanmod_exclude_pattern" || true)
+  if [ -n "$excluded" ]; then
+    printf 'Skipping XanMod patches not usable on %s:\n%s\n' \
+      "$series" "$excluded"
+  fi
+  xanmod_patches=$(printf '%s\n' "$xanmod_patches" | grep -Ev "$xanmod_exclude_pattern" || true)
+fi
+
 {
   printf '\n# Net patches from XanMod\n'
-  find "$kernel_dir/patches/net" -type f -name '*.patch' -printf 'net/%P\n' | sort
+  printf '%s\n' "$xanmod_patches"
   printf '# Custom patches\n'
   find "$kernel_dir/patches/custom" -type f -name '*.patch' -printf 'custom/%P\n' | sort
 } >> "$kernel_dir/patches/series"
