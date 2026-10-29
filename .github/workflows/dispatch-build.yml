@@ -1,0 +1,60 @@
+name: Dispatch Kernel Build From Request
+
+# Lets a plain "git push" request a kernel build without an API token:
+# drop a file named <kernel-version>.txt under .build-requests/ whose only
+# content is the target architecture (x86_64 or arm64).
+on:
+  push:
+    paths:
+      - ".build-requests/*.txt"
+
+permissions:
+  contents: write
+
+jobs:
+  dispatch:
+    name: Dispatch Kernel Build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Workflow Source Code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      - name: Read Build Request
+        id: request
+        run: |
+          file=$(
+            git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" \
+              | grep -E '^\.build-requests/[^/]+\.txt$' | head -n 1
+          )
+          if [ -z "$file" ]; then
+            echo "No build request file in this push, nothing to do."
+            echo "SKIP=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          version=$(basename "$file" .txt)
+          arch=$(tr -d ' \t\r\n' < "$file")
+          case "$arch" in
+            x86_64|arm64) ;;
+            *)
+              echo "Invalid architecture in $file: '$arch'" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "Requested kernel $version for $arch"
+          {
+            echo "SKIP=false"
+            echo "VERSION=$version"
+            echo "ARCH=$arch"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch Build Workflow
+        if: steps.request.outputs.SKIP != 'true'
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: trigger-${{ steps.request.outputs.ARCH }}-build
+          client-payload: '{"kernel_version": "${{ steps.request.outputs.VERSION }}"}'
