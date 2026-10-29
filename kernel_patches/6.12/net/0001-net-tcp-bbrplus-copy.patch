@@ -7,9 +7,9 @@ Subject: [PATCH] [PATCH 2/2] Implement BBRplus TCP congestion control
 ---
  net/ipv4/Kconfig       |   14 +-
  net/ipv4/Makefile      |    1 +
- net/ipv4/tcp_bbrplus.c | 1215 ++++++++++++++++++++++++++++++++++++++++
+ net/ipv4/tcp_bbrplus.c | 1194 ++++++++++++++++++++++++++++++++++++++++
  net/ipv4/tcp_output.c  |    1 +
- 4 files changed, 1230 insertions(+), 1 deletion(-)
+ 4 files changed, 1209 insertions(+), 1 deletion(-)
  create mode 100644 net/ipv4/tcp_bbrplus.c
 
 Index: linux-6.12.21/net/ipv4/Kconfig
@@ -67,7 +67,7 @@ Index: linux-6.12.21/net/ipv4/tcp_bbrplus.c
 ===================================================================
 --- /dev/null
 +++ linux-6.12.21/net/ipv4/tcp_bbrplus.c
-@@ -0,0 +1,1218 @@
+@@ -0,0 +1,1197 @@
 +/* Bottleneck Bandwidth and RTT (BBR) congestion control
 + *
 + * BBR congestion control computes the sending rate based on the delivery
@@ -1244,31 +1244,10 @@ Index: linux-6.12.21/net/ipv4/tcp_bbrplus.c
 +    .set_state  = bbr_set_state,
 +};
 +
-+BTF_KFUNCS_START(tcp_bbr_check_kfunc_ids)
-+BTF_ID_FLAGS(func, bbr_init)
-+BTF_ID_FLAGS(func, bbr_main)
-+BTF_ID_FLAGS(func, bbr_sndbuf_expand)
-+BTF_ID_FLAGS(func, bbr_undo_cwnd)
-+BTF_ID_FLAGS(func, bbr_cwnd_event)
-+BTF_ID_FLAGS(func, bbr_ssthresh)
-+BTF_ID_FLAGS(func, bbr_tso_segs)
-+BTF_ID_FLAGS(func, bbr_set_state)
-+BTF_KFUNCS_END(tcp_bbr_check_kfunc_ids)
-+
-+static const struct btf_kfunc_id_set tcp_bbr_kfunc_set = {
-+    .owner = THIS_MODULE,
-+    .set   = &tcp_bbr_check_kfunc_ids,
-+};
-+
 +static int __init bbr_register(void)
 +{
-+    int ret;
-+
 +    BUILD_BUG_ON(sizeof(struct bbr) > ICSK_CA_PRIV_SIZE);
 +
-+    ret = register_btf_kfunc_id_set(BPF_PROG_TYPE_STRUCT_OPS, &tcp_bbr_kfunc_set);
-+    if (ret < 0)
-+        return ret;
 +    return tcp_register_congestion_control(&tcp_bbr_cong_ops);
 +}
 +
