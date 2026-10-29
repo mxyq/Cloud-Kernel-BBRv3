@@ -3,4 +3,4 @@
 version=6.18.15
 arch=x86_64
 diagnostic=false
-# rebuild: include the tcp_bbrplus kfunc fix
+# rebuild 2: include the tcp_bbrplus kfunc fix
