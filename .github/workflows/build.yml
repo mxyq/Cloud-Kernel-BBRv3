@@ -462,6 +462,7 @@ jobs:
 
       - name: Validate Installer Package Lifecycle
         run: |
+          set +e
           docker run --rm \
             --volume "$GITHUB_WORKSPACE:/workspace:ro" \
             --env DEBIAN_FRONTEND=noninteractive \
@@ -469,7 +470,19 @@ jobs:
             bash -euxo pipefail -c '
               apt-get update
               /workspace/.github/scripts/test_install_kernel_deb.sh /workspace/packages
-            '
+            ' > validate.log 2>&1
+          status=$?
+          set -e
+
+          if [ "$status" -ne 0 ]; then
+            printf '::error title=DEB validation failed on %s::%s\n' \
+              "${{ matrix.name }}" \
+              "$(grep -nEi '^E:|dpkg:|error|failed|not found|no such' validate.log \
+                | tail -n 8 | tr '\n' '|' | head -c 900)"
+            tail -n 60 validate.log
+            exit "$status"
+          fi
+          tail -n 20 validate.log
 
   build-rpm:
     name: Build Generic RPMs for ${{ needs.prepare.outputs.arch }}
@@ -825,11 +838,6 @@ jobs:
                 dist/apk/generic
           }
 
-          if [ "$DIAGNOSTIC_BUILD" != "true" ]; then
-            run_apk_build
-            exit 0
-          fi
-
           diagnostic_dir=kernel-build-diagnostics/apk-generic
           mkdir -p "$diagnostic_dir"
           set +e
@@ -837,6 +845,9 @@ jobs:
           build_status=$?
           set -e
           if [ "$build_status" -ne 0 ]; then
+            printf '::error title=APK build failed (status %s)::%s\n' "$build_status" \
+              "$(grep -nEi 'error|fatal|failed|untrusted|required|signing|denied' \
+                "$diagnostic_dir/build.log" | tail -n 8 | tr '\n' '|' | head -c 900)"
             echo "::group::APK build diagnostics"
             grep -nEi 'BTF|pahole|fatal|error:|failed|killed|no space|undefined reference|untrusted' \
               "$diagnostic_dir/build.log" | tail -n 200 || true
@@ -844,8 +855,14 @@ jobs:
             echo "::group::Last 500 APK build log lines"
             tail -n 500 "$diagnostic_dir/build.log"
             echo "::endgroup::"
+            if [ "$DIAGNOSTIC_BUILD" = "true" ]; then
+              zstd -T0 -10 --rm "$diagnostic_dir/build.log"
+            else
+              rm -f "$diagnostic_dir/build.log"
+            fi
             exit "$build_status"
           fi
+          rm -f "$diagnostic_dir/build.log"
 
       - name: Collect APK Build Diagnostics
         if: always() && needs.prepare.outputs.diagnostic_build == 'true'
