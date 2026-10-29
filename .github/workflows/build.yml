@@ -440,6 +440,12 @@ jobs:
         include:
           - name: Debian 11
             image: debian:11-slim
+            # Debian 11 is EOL: the superseded packages this image still
+            # asks for were dropped from deb.debian.org, so install from the
+            # archive, which keeps every published revision.
+            apt_sources: |
+              deb http://archive.debian.org/debian bullseye main
+              deb http://archive.debian.org/debian-security bullseye-security main
           - name: Debian 12
             image: debian:12-slim
           - name: Debian 13
@@ -466,8 +472,14 @@ jobs:
           docker run --rm \
             --volume "$GITHUB_WORKSPACE:/workspace:ro" \
             --env DEBIAN_FRONTEND=noninteractive \
+            --env APT_SOURCES="${{ matrix.apt_sources }}" \
             "${{ matrix.image }}" \
             bash -euxo pipefail -c '
+              if [ -n "${APT_SOURCES:-}" ]; then
+                printf "%s\n" "$APT_SOURCES" > /etc/apt/sources.list
+                printf "Acquire::Check-Valid-Until \"false\";\n" \
+                  > /etc/apt/apt.conf.d/99no-check-valid-until
+              fi
               apt-get update
               /workspace/.github/scripts/test_install_kernel_deb.sh /workspace/packages
             ' > validate.log 2>&1

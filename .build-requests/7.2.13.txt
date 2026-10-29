@@ -3,4 +3,4 @@
 version=7.2.13
 arch=x86_64
 diagnostic=false
-# run 8: diagnose Debian 11 validation + APK signing failures
+# run 9: APK signing key configured + Debian 11 archive source
