@@ -34,7 +34,7 @@ AUTO_MIRRORS=false
 # Newest release known when this copy of the script was published. The menu
 # refreshes it over the user's own network on startup, so this value only
 # matters when that probe fails (offline, blocked, rate limited).
-BUILTIN_LATEST_VERSION="6.18.15"
+BUILTIN_LATEST_VERSION="7.2.13"
 SUPPORTED_SERIES=("6.12" "6.18" "7.1" "7.2")
 # Interactive menu. The last entry always installs the newest release
 # whatever series upstream publishes, so it never needs maintenance.
@@ -364,17 +364,22 @@ probe_latest_release_version() {
     local response tag
 
     command -v curl >/dev/null 2>&1 || return 1
-    response=$(curl -fsSL --connect-timeout 4 --max-time 5 --retry 0 \
-        "${REPO_API}/releases/latest" 2>/dev/null) || return 1
+    # "latest" means the highest kernel version published, not merely the most
+    # recently uploaded release: building 6.18.15 after 7.2.13 must not make
+    # the menu offer the older series.
+    response=$(curl -fsSL --connect-timeout 4 --max-time 6 --retry 0 \
+        "${REPO_API}/releases?per_page=100" 2>/dev/null) || return 1
     [ -n "$response" ] || return 1
 
     tag=$(printf '%s' "$response" \
         | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' \
-        | head -n 1 \
-        | sed -e 's/.*"\([^"]*\)"$/\1/')
-    tag="${tag%-arm64}"
+        | sed -e 's/.*"\([^"]*\)"$/\1/' \
+        | sed -e 's/-arm64$//' \
+        | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
+        | sort -V \
+        | tail -n 1)
 
-    if [[ "$tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    if [ -n "$tag" ]; then
         printf '%s' "$tag"
         return 0
     fi
@@ -1007,6 +1012,13 @@ fetch_releases() {
             filtered_releases+=("$tag|$asset_upload_time")
         fi
     done <<< "$releases_info"
+
+    if [ "$SELECT_LATEST" = true ] && [ "${#filtered_releases[@]}" -gt 0 ]; then
+        # Order by kernel version, not by upload time.
+        mapfile -t filtered_releases < <(
+            printf '%s\n' "${filtered_releases[@]}" | sort -t'|' -k1,1V -r
+        )
+    fi
 
     if [ "${#filtered_releases[@]}" -eq 0 ]; then
         if [ "$SELECT_LATEST" = true ]; then

@@ -1157,6 +1157,14 @@ jobs:
             exit 0
           fi
 
+          # Only ever move the recorded version upwards: building an older
+          # series (6.18.15 after 7.2.13) must not downgrade the menu default.
+          highest=$(printf '%s\n%s\n' "$current" "$version" | sort -V | tail -n 1)
+          if [ "$highest" != "$version" ]; then
+            echo "installer already records a newer version ($current)"
+            exit 0
+          fi
+
           sed -i "s/^BUILTIN_LATEST_VERSION=.*/BUILTIN_LATEST_VERSION=\"$version\"/" install-kernel.sh
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
