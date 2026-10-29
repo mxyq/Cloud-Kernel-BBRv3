@@ -232,6 +232,13 @@ jobs:
     name: Compile Kernel Once for ${{ needs.prepare.outputs.arch }}
     runs-on: ${{ needs.prepare.outputs.runner }}
     needs: [prepare, prepare-source]
+    env:
+      # Align with the directory ccache-action restores into, otherwise the
+      # build script would silently fall back to a fresh CCACHE_DIR and every
+      # run would compile from scratch. The prepared source tree is unpacked
+      # fresh on each run, so also ignore header timestamps for cache hits.
+      CCACHE_DIR: /home/runner/.ccache
+      CCACHE_SLOPPINESS: include_file_mtime,include_file_ctime
     steps:
       - name: Install Kernel Build Dependencies
         run: |
