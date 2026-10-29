@@ -27,7 +27,6 @@ The build also verifies the full commit resolved by the tag and the upstream `ve
 | Kernel series | x86_64 | arm64 | Project compatibility work |
 | --- | --- | --- | --- |
 | `6.12` | Supported | Supported | No series-specific patch |
-| `7.1` | Supported | Supported | `CONFIG_IPV6=y`; UDP tunnel socket API adaptation |
 
 Patches are organized by scope:
 
@@ -37,10 +36,10 @@ patches/
 └── <kernel-series>/    # Applied only to the named kernel series
 ```
 
-The current Linux 7.1 compatibility patch is:
+The current UDP tunnel compatibility patch is (applies to every series):
 
 ```text
-patches/7.1/0001-compat-linux-7.1-udp-tunnel-sock-api.patch
+patches/common/0001-compat-linux-7.1-udp-tunnel-sock-api.patch
 ```
 
 Linux 7.1 changed `setup_udp_tunnel_sock()` and `udp_tunnel_sock_release()` from `struct socket` parameters to `struct sock`. The project patch passes `socket->sk` on Linux 7.1 and later while retaining the previous calls for earlier kernels.
@@ -64,7 +63,7 @@ The update script:
 5. Validates the `patches/common/` and `patches/<series>/` stacks for each kernel series in order, with fuzz disabled.
 6. Updates the tag, commit, and version in `source.env`.
 
-After an update, revalidate the Linux 6.12, 7.1, and 7.2 build matrix on x86_64 and arm64, and confirm that all four package formats still contain the module paths declared by the manifest. If upstream has incorporated a compatibility fix, remove or regenerate the corresponding patch instead of retaining a patch that applies in reverse or requires fuzz.
+After an update, revalidate the Linux 6.12 and 7.2 build matrix on x86_64 and arm64, and confirm that all four package formats still contain the module paths declared by the manifest. If upstream has incorporated a compatibility fix, remove or regenerate the corresponding patch instead of retaining a patch that applies in reverse or requires fuzz.
 
 ## Files
 

@@ -46,7 +46,7 @@ fi
 
 required_config=(CONFIG_AMNEZIAWG=m)
 case "$kernel_series" in
-  7.1|7.2) required_config+=(CONFIG_IPV6=y) ;;
+  7.2) required_config+=(CONFIG_IPV6=y) ;;
 esac
 required_config_json=$(printf '%s\n' "${required_config[@]}" | jq -R . | jq -s .)
 

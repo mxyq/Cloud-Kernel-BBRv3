@@ -27,7 +27,6 @@
 | 内核系列 | x86_64 | arm64 | 项目兼容处理 |
 | --- | --- | --- | --- |
 | `6.12` | 支持 | 支持 | 无系列专用补丁 |
-| `7.1` | 支持 | 支持 | `CONFIG_IPV6=y`；适配 UDP tunnel socket API |
 
 补丁按作用范围存放：
 
@@ -37,13 +36,13 @@ patches/
 └── <kernel-series>/    # 只应用于指定内核系列
 ```
 
-当前 Linux 7.1 兼容补丁位于：
+当前 UDP tunnel 兼容补丁位于（对所有系列生效）：
 
 ```text
-patches/7.1/0001-compat-linux-7.1-udp-tunnel-sock-api.patch
+patches/common/0001-compat-linux-7.1-udp-tunnel-sock-api.patch
 ```
 
-Linux 7.1 将 `setup_udp_tunnel_sock()` 和 `udp_tunnel_sock_release()` 的参数从 `struct socket` 改为 `struct sock`。项目补丁在 7.1 及更高版本中传入 `socket->sk`，同时为较早内核保留原调用方式。
+Linux 7.1 起将 `setup_udp_tunnel_sock()` 和 `udp_tunnel_sock_release()` 的参数从 `struct socket` 改为 `struct sock`。项目补丁在 7.1 及更高版本中传入 `socket->sk`，同时为较早内核保留原调用方式。
 
 所有补丁均使用零 fuzz 模式应用。补丁上下文漂移时，源码准备或更新检查会直接失败。
 
@@ -64,7 +63,7 @@ bash external/amneziawg/update.sh v<version>
 5. 按内核系列依次验证 `patches/common/` 和 `patches/<series>/` 补丁栈，禁止 fuzz。
 6. 更新 `source.env` 中的 Tag、Commit 和版本。
 
-更新后必须重新验证 Linux 6.12、7.1、7.2 的 x86_64 和 arm64 构建矩阵，并确认四种软件包仍包含 manifest 声明的模块路径。若上游已合并某项兼容修复，应删除或重制对应补丁，而不是保留可被反向应用或依赖 fuzz 的旧补丁。
+更新后必须重新验证 Linux 6.12、7.2 的 x86_64 和 arm64 构建矩阵，并确认四种软件包仍包含 manifest 声明的模块路径。若上游已合并某项兼容修复，应删除或重制对应补丁，而不是保留可被反向应用或依赖 fuzz 的旧补丁。
 
 ## 文件说明
 

@@ -10,7 +10,7 @@
 [![Upstream Check](https://github.com/mxyq/Cloud-Kernel-BBRv3/actions/workflows/check-upstream.yml/badge.svg)](https://github.com/mxyq/Cloud-Kernel-BBRv3/actions/workflows/check-upstream.yml)
 [![License](https://img.shields.io/badge/license-mixed-blue.svg)](LICENSE)
 
-![Kernel Series](https://img.shields.io/badge/kernel-6.12%20%7C%207.1%20%7C%207.2-blue)
+![Kernel Series](https://img.shields.io/badge/kernel-6.12%20%7C%207.2-blue)
 ![BBRv3](https://img.shields.io/badge/BBR-v3-brightgreen)
 ![BBRPlus](https://img.shields.io/badge/BBR-Plus-orange)
 ![EEVDF](https://img.shields.io/badge/scheduler-EEVDF-blueviolet)
@@ -27,7 +27,6 @@ Maintained kernel series:
 | Series | Track          | x86_64 | arm64 | Auto-update |
 | --------| :--------------:| :------:| :-----:| :-----------:|
 | `6.12` | LTS            | ✅      | ✅     | ✅           |
-| `7.1`  | Current stable | ✅      | ✅     | ✅           |
 | `7.2`  | Current stable | ✅      | ✅     | ✅           |
 
 Supported systems:
@@ -47,16 +46,16 @@ Supported systems:
 
 RPM packages are available for Fedora, Red Hat Enterprise Linux, Rocky Linux, AlmaLinux, CentOS Stream, and Oracle Linux. CI runs installation and removal checks on Fedora and Rocky Linux; the other RPM distributions are experimental compatibility targets.
 
-The installer selects `7.1` by default, but you can choose any maintained series. Each day, `check-upstream.yml` checks every series for a newer Debian upstream release and triggers a build only when that version has not yet been published for the target architecture.
+The installer installs the newest release by default (currently `7.2.13`), but you can choose any maintained series. Each day, `check-upstream.yml` checks every series for a newer Debian upstream release and triggers a build only when that version has not yet been published for the target architecture.
 
 > [!IMPORTANT]
 > **Kernel suffix change**: recent releases carry a `-cloudy` suffix by default (`CONFIG_LOCALVERSION="-cloudy"`).
-> As a result, `uname -r` reports a version such as `7.1.6-cloudy`, with files installed under `/boot/vmlinuz-<version>-cloudy` and `/lib/modules/<version>-cloudy/`.
+> As a result, `uname -r` reports a version such as `7.2.13-cloudy`, with files installed under `/boot/vmlinuz-<version>-cloudy` and `/lib/modules/<version>-cloudy/`.
 > The suffix prevents file conflicts with a distribution kernel of the same version and keeps the stock kernel available as a fallback boot entry.
 > Older releases without the suffix are unaffected. If you installed one previously, both kernels will remain after an upgrade; remove the old package only after confirming that the new kernel boots correctly.
 
 This repository builds every package format from the same patched, fully configured kernel source tree:
-- Uses official Linux kernel source for the 6.12, 7.1, and 7.2 series from [kernel.org](https://www.kernel.org/)
+- Uses official Linux kernel source for the 6.12 and 7.2 series from [kernel.org](https://www.kernel.org/)
 - Applies patches maintained by the Debian kernel team from [kernel-team/linux](https://salsa.debian.org/kernel-team/linux/)
 - Every external patch source (Debian kernel, XanMod, AmneziaWG) is pinned as a Git submodule under `vendor/` and declared in `.gitmodules`; builds fetch the upstream head shallowly, while the exact revision is fixed by the kernel version and `source.env` and recorded in `build-manifest.json`
 - **BBR congestion control options**
@@ -72,7 +71,7 @@ This repository builds every package format from the same patched, fully configu
 
 | Component | Details |
 | --- | --- |
-| Kernel base | 6.12 / 7.1 / 7.2 series with Debian kernel team patches |
+| Kernel base | 6.12 / 7.2 series with Debian kernel team patches |
 | Networking | BBRv3 built in and enabled by default; BBRPlus and BBRv1 as modules; AmneziaWG as a kernel module; `sch_fq` as the default qdisc |
 | CPU scheduler | Upstream EEVDF fair scheduler |
 | Memory policy | THP in `madvise` mode; autogroup and automatic NUMA balancing disabled |
@@ -129,7 +128,7 @@ Options and commands:
   - `install`: Directly install the latest kernel in the selected series; defaults to 7.1
   - `help`: Display help information
 - `install` options
-  - `-s, --series, --kernel-series`: Select a kernel series (`6.12`, `7.1`, or `7.2`)
+  - `-s, --series, --kernel-series`: Select a kernel series (`6.12` or `7.2`)
   - `-v, --version`: Specify a full kernel version; the series is inferred when omitted
   - `-a, --no-reboot`: Skip reboot after installation
   - `--signing-fingerprint`: Optional trusted full OpenPGP fingerprint; `CLOUD_KERNEL_GPG_FINGERPRINT` is also supported
