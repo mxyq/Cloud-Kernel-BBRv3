@@ -3,4 +3,4 @@
 version=7.2.13
 arch=x86_64
 diagnostic=false
-# retry: xanmod netfilter patches excluded on 7.2 (upstream removed xt_FLOWOFFLOAD)
+# run 8: diagnose Debian 11 validation + APK signing failures
