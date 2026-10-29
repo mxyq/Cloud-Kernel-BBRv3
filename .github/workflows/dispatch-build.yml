@@ -36,6 +36,8 @@ jobs:
 
           version=$(sed -n 's/^version=//p' "$file" | head -n 1 | tr -d ' \t\r\n')
           arch=$(sed -n 's/^arch=//p' "$file" | head -n 1 | tr -d ' \t\r\n')
+          diagnostic=$(sed -n 's/^diagnostic=//p' "$file" | head -n 1 | tr -d ' \t\r\n')
+          diagnostic=${diagnostic:-false}
 
           if [ -z "$version" ] || [ -z "$arch" ]; then
             echo "Request file $file needs version= and arch= lines" >&2
@@ -48,12 +50,20 @@ jobs:
               exit 1
               ;;
           esac
+          case "$diagnostic" in
+            true|false) ;;
+            *)
+              echo "Invalid diagnostic value in $file: '$diagnostic'" >&2
+              exit 1
+              ;;
+          esac
 
-          echo "Requested kernel $version for $arch"
+          echo "Requested kernel $version for $arch (diagnostic=$diagnostic)"
           {
             echo "SKIP=false"
             echo "VERSION=$version"
             echo "ARCH=$arch"
+            echo "DIAGNOSTIC=$diagnostic"
           } >> "$GITHUB_OUTPUT"
 
       - name: Dispatch Build Workflow
@@ -62,4 +72,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           event-type: trigger-${{ steps.request.outputs.ARCH }}-build
-          client-payload: '{"kernel_version": "${{ steps.request.outputs.VERSION }}"}'
+          client-payload: '{"kernel_version": "${{ steps.request.outputs.VERSION }}", "diagnostic_build": "${{ steps.request.outputs.DIAGNOSTIC }}"}'

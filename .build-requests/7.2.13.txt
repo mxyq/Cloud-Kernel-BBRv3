@@ -2,3 +2,4 @@
 # Change any line in this file and push to ask CI to build that version.
 version=7.2.13
 arch=x86_64
+diagnostic=true

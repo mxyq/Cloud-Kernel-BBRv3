@@ -272,23 +272,29 @@ jobs:
               dist/kernel
           }
 
-          if [ "$DIAGNOSTIC_BUILD" != "true" ]; then
-            run_kernel_build
-            exit 0
-          fi
-
           diagnostic_dir=kernel-build-diagnostics
           mkdir -p "$diagnostic_dir"
+
           set +e
           run_kernel_build > "$diagnostic_dir/build.log" 2>&1
           build_status=$?
           set -e
+
           if [ "$build_status" -ne 0 ]; then
-            grep -nE 'BTF|pahole|resolve_btfids|FAILED|Failed|Error [0-9]+|Killed|out of memory' \
-              "$diagnostic_dir/build.log" | tail -n 200 || true
-            tail -n 500 "$diagnostic_dir/build.log"
+            grep -nE 'error:|Error [0-9]+|fatal|FAILED|Failed to|No rule to make|undefined reference|Killed|out of memory' \
+              "$diagnostic_dir/build.log" | tail -n 8 > "$diagnostic_dir/errors.txt" || true
+            printf '::error title=Kernel build failed (status %s)::%s\n' \
+              "$build_status" \
+              "$(tr '\n' '|' < "$diagnostic_dir/errors.txt" | head -c 900)"
+            tail -n 60 "$diagnostic_dir/build.log"
+            if [ "$DIAGNOSTIC_BUILD" = "true" ]; then
+              zstd -T0 -10 --rm "$diagnostic_dir/build.log"
+            else
+              rm -f "$diagnostic_dir/build.log"
+            fi
             exit "$build_status"
           fi
+          rm -f "$diagnostic_dir/build.log"
 
       - name: Collect Build Diagnostics
         if: always() && needs.prepare.outputs.diagnostic_build == 'true'
