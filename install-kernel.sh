@@ -34,7 +34,7 @@ AUTO_MIRRORS=false
 # Newest release known when this copy of the script was published. The menu
 # refreshes it over the user's own network on startup, so this value only
 # matters when that probe fails (offline, blocked, rate limited).
-BUILTIN_LATEST_VERSION="7.2.13"
+BUILTIN_LATEST_VERSION="6.18.15"
 SUPPORTED_SERIES=("6.12" "6.18" "7.1" "7.2")
 # Interactive menu. The last entry always installs the newest release
 # whatever series upstream publishes, so it never needs maintenance.
