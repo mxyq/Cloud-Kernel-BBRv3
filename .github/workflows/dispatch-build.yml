@@ -39,7 +39,8 @@ jobs:
 
           file=$(printf '%s\n' "$changed" \
             | grep -E '^\.build-requests/[^/]+\.txt$' | head -n 1)
-          if [ -z "$file" ]; then
+          # A deleted or renamed request file is not a new request.
+          if [ -z "$file" ] || [ ! -f "$file" ]; then
             echo "No build request file in this push, nothing to do."
             echo "SKIP=true" >> "$GITHUB_OUTPUT"
             exit 0

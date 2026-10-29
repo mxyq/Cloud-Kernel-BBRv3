@@ -87,12 +87,6 @@ git -C "$debian_dir" checkout --detach --force "debian/$kernel_version-1"
 
 printf 'Using XanMod patch collection from submodule %s\n' "$xanmod_dir"
 
-if [ "$series" = "6.18" ] && dpkg --compare-versions "$kernel_version" lt "6.18.33"; then
-  xanmod_ref=0bc9e62789c65ae9b2cf8910773f892a51d9e896
-  git -C "$xanmod_dir" fetch --depth=1 origin "$xanmod_ref"
-  git -C "$xanmod_dir" checkout --detach FETCH_HEAD
-fi
-
 xanmod_fix_dir=$repo_root/xanmod_patch_fixes/$series
 if [ -d "$xanmod_fix_dir" ]; then
   for fix_patch in "$xanmod_fix_dir"/*.patch; do

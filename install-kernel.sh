@@ -35,10 +35,10 @@ AUTO_MIRRORS=false
 # refreshes it over the user's own network on startup, so this value only
 # matters when that probe fails (offline, blocked, rate limited).
 BUILTIN_LATEST_VERSION="7.2.13"
-SUPPORTED_SERIES=("6.12" "6.18" "7.1" "7.2")
+SUPPORTED_SERIES=("6.12" "7.1" "7.2")
 # Interactive menu. The last entry always installs the newest release
 # whatever series upstream publishes, so it never needs maintenance.
-MENU_OPTIONS=("6.12" "6.18" "latest")
+MENU_OPTIONS=("6.12" "latest")
 DEFAULT_SERIES="7.1"
 DEFAULT_MENU_OPTION="latest"
 SELECT_LATEST=false
@@ -108,7 +108,7 @@ STRINGS[en,using_latest]="Using the latest release"
 STRINGS[en,latest_recommended]="Latest version in this series!"
 STRINGS[en,using_series]="Using kernel series:"
 STRINGS[en,selected]="Selected:"
-STRINGS[en,unsupported_series]="Error: Unsupported kernel series. Supported series: 6.12, 6.18, 7.1, 7.2."
+STRINGS[en,unsupported_series]="Error: Unsupported kernel series. Supported series: 6.12, 7.1, 7.2."
 STRINGS[en,invalid_version]="Error: Kernel version must use the full x.y.z format."
 STRINGS[en,version_series_mismatch]="Error: The specified kernel version does not belong to the selected series."
 STRINGS[en,missing_option_value]="Error: Missing value for option:"
@@ -164,7 +164,7 @@ STRINGS[en,help_help]="help       Show this help message"
 STRINGS[en,help_options]="Options:"
 STRINGS[en,help_language]="  -l, --language    Set language (zh/en)"
 STRINGS[en,help_install_options]="Options for 'install' command:"
-STRINGS[en,help_series]="  -s, --series, --kernel-series    Select kernel series (6.12/6.18/7.1/7.2 or latest; default: latest)"
+STRINGS[en,help_series]="  -s, --series, --kernel-series    Select kernel series (6.12/7.1/7.2 or latest; default: latest)"
 STRINGS[en,help_version]="  -v, --version     Specify full kernel version (infers series when -s is omitted)"
 STRINGS[en,help_no_reboot]="  -a, --no-reboot   Skip reboot after installation"
 STRINGS[en,help_headers]="      --headers       Also install kernel headers/development files"
@@ -172,7 +172,7 @@ STRINGS[en,help_signing_fingerprint]="      --signing-fingerprint    Optional tr
 STRINGS[en,help_github_mirror]="      --github-mirror URL      HTTPS proxy prefix for GitHub URLs (or CLOUD_KERNEL_GITHUB_MIRROR)"
 STRINGS[en,help_auto_mirrors]="      --auto-mirrors           Skip direct GitHub connection, use built-in mirrors only"
 STRINGS[en,help_examples]="Examples:"
-STRINGS[en,help_example1]="  Install the latest kernel from the 6.18 series with English interface:"
+STRINGS[en,help_example1]="  Install the latest kernel from the 6.12 series with English interface:"
 STRINGS[en,help_example2]="  Install a specific kernel version without reboot:"
 STRINGS[en,auto_install]="Automatic installation mode"
 STRINGS[en,using_version]="Using kernel version:"
@@ -205,7 +205,7 @@ STRINGS[zh,using_latest]="使用最新版本"
 STRINGS[zh,latest_recommended]="此系列的最新版本！"
 STRINGS[zh,using_series]="使用内核系列："
 STRINGS[zh,selected]="已选择："
-STRINGS[zh,unsupported_series]="错误：不支持的内核系列。支持的系列：6.12、6.18、7.1、7.2。"
+STRINGS[zh,unsupported_series]="错误：不支持的内核系列。支持的系列：6.12、7.1、7.2。"
 STRINGS[zh,invalid_version]="错误：内核版本必须使用完整的 x.y.z 格式。"
 STRINGS[zh,version_series_mismatch]="错误：指定的内核版本不属于所选系列。"
 STRINGS[zh,missing_option_value]="错误：选项缺少参数值："
@@ -261,7 +261,7 @@ STRINGS[zh,help_help]="help       显示此帮助信息"
 STRINGS[zh,help_options]="选项："
 STRINGS[zh,help_language]="  -l, --language    设置语言 (zh/en)"
 STRINGS[zh,help_install_options]="'install' 命令的选项："
-STRINGS[zh,help_series]="  -s, --series, --kernel-series    选择内核系列 (6.12/6.18/7.1/7.2 或 latest；默认：latest)"
+STRINGS[zh,help_series]="  -s, --series, --kernel-series    选择内核系列 (6.12/7.1/7.2 或 latest；默认：latest)"
 STRINGS[zh,help_version]="  -v, --version     指定完整内核版本（未设置 -s 时自动推断系列）"
 STRINGS[zh,help_no_reboot]="  -a, --no-reboot   安装后不重启"
 STRINGS[zh,help_headers]="      --headers       同时安装内核头文件和开发文件"
@@ -269,7 +269,7 @@ STRINGS[zh,help_signing_fingerprint]="      --signing-fingerprint    可选的�
 STRINGS[zh,help_github_mirror]="      --github-mirror URL      GitHub URL 的 HTTPS 镜像代理前缀（或 CLOUD_KERNEL_GITHUB_MIRROR）"
 STRINGS[zh,help_auto_mirrors]="      --auto-mirrors           跳过直接连接 GitHub，仅使用内置镜像源"
 STRINGS[zh,help_examples]="示例："
-STRINGS[zh,help_example1]="  使用英文界面安装 6.18 系列的最新内核："
+STRINGS[zh,help_example1]="  使用英文界面安装 6.12 系列的最新内核："
 STRINGS[zh,help_example2]="  安装特定版本内核且不重启："
 STRINGS[zh,auto_install]="自动安装模式"
 STRINGS[zh,using_version]="使用内核版本："
@@ -365,7 +365,7 @@ probe_latest_release_version() {
 
     command -v curl >/dev/null 2>&1 || return 1
     # "latest" means the highest kernel version published, not merely the most
-    # recently uploaded release: building 6.18.15 after 7.2.13 must not make
+    # recently uploaded release: publishing an older series later must not make
     # the menu offer the older series.
     response=$(curl -fsSL --connect-timeout 4 --max-time 6 --retry 0 \
         "${REPO_API}/releases?per_page=100" 2>/dev/null) || return 1
@@ -1749,7 +1749,7 @@ show_help() {
 
     get_string help_examples
     get_string help_example1
-    echo "  $0 -l en install --series 6.18"
+    echo "  $0 -l en install --series 6.12"
     echo ""
     get_string help_example2
     echo "  $0 install --series 6.12 --version 6.12.21 --no-reboot"

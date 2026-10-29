@@ -10,7 +10,7 @@
 [![Upstream Check](https://github.com/mxyq/Cloud-Kernel-BBRv3/actions/workflows/check-upstream.yml/badge.svg)](https://github.com/mxyq/Cloud-Kernel-BBRv3/actions/workflows/check-upstream.yml)
 [![License](https://img.shields.io/badge/license-mixed-blue.svg)](LICENSE)
 
-![Kernel Series](https://img.shields.io/badge/kernel-6.12%20%7C%206.18%20%7C%207.1%20%7C%207.2-blue)
+![Kernel Series](https://img.shields.io/badge/kernel-6.12%20%7C%207.1%20%7C%207.2-blue)
 ![BBRv3](https://img.shields.io/badge/BBR-v3-brightgreen)
 ![BBRPlus](https://img.shields.io/badge/BBR-Plus-orange)
 ![EEVDF](https://img.shields.io/badge/scheduler-EEVDF-blueviolet)
@@ -27,7 +27,6 @@ Maintained kernel series:
 | Series | Track          | x86_64 | arm64 | Auto-update |
 | --------| :--------------:| :------:| :-----:| :-----------:|
 | `6.12` | LTS            | ✅      | ✅     | ✅           |
-| `6.18` | LTS            | ✅      | ✅     | ✅           |
 | `7.1`  | Current stable | ✅      | ✅     | ✅           |
 | `7.2`  | Current stable | ✅      | ✅     | ✅           |
 
@@ -57,7 +56,7 @@ The installer selects `7.1` by default, but you can choose any maintained series
 > Older releases without the suffix are unaffected. If you installed one previously, both kernels will remain after an upgrade; remove the old package only after confirming that the new kernel boots correctly.
 
 This repository builds every package format from the same patched, fully configured kernel source tree:
-- Uses official Linux kernel source for the 6.12, 6.18, 7.1, and 7.2 series from [kernel.org](https://www.kernel.org/)
+- Uses official Linux kernel source for the 6.12, 7.1, and 7.2 series from [kernel.org](https://www.kernel.org/)
 - Applies patches maintained by the Debian kernel team from [kernel-team/linux](https://salsa.debian.org/kernel-team/linux/)
 - Every external patch source (Debian kernel, XanMod, AmneziaWG) is pinned as a Git submodule under `vendor/` and declared in `.gitmodules`; builds fetch the upstream head shallowly, while the exact revision is fixed by the kernel version and `source.env` and recorded in `build-manifest.json`
 - **BBR congestion control options**
@@ -73,7 +72,7 @@ This repository builds every package format from the same patched, fully configu
 
 | Component | Details |
 | --- | --- |
-| Kernel base | 6.12 / 6.18 / 7.1 / 7.2 series with Debian kernel team patches |
+| Kernel base | 6.12 / 7.1 / 7.2 series with Debian kernel team patches |
 | Networking | BBRv3 built in and enabled by default; BBRPlus and BBRv1 as modules; AmneziaWG as a kernel module; `sch_fq` as the default qdisc |
 | CPU scheduler | Upstream EEVDF fair scheduler |
 | Memory policy | THP in `madvise` mode; autogroup and automatic NUMA balancing disabled |
@@ -107,8 +106,8 @@ export CLOUD_KERNEL_GPG_FINGERPRINT="AFD6BDBFEBB9105077C4CA41399953F30E337E5E"
 # Automatically install the latest kernel from the default 7.1 series
 ./install-kernel.sh install
 
-# Install the latest kernel from the 6.18 series with an English interface
-./install-kernel.sh -l en install --series 6.18
+# Install the latest kernel from the 6.12 series with an English interface
+./install-kernel.sh -l en install --series 6.12
 
 # Install an exact version without rebooting (the series is inferred when omitted)
 ./install-kernel.sh install --version 6.12.21 --no-reboot
@@ -116,11 +115,11 @@ export CLOUD_KERNEL_GPG_FINGERPRINT="AFD6BDBFEBB9105077C4CA41399953F30E337E5E"
 # If GitHub API access fails because of a shared-IP rate limit (HTTP 403),
 # network policy, or a 10-second timeout, the installer races seven verified
 # mirrors and automatically uses the fastest successful node.
-./install-kernel.sh install --series 6.18
+./install-kernel.sh install --series 6.12
 
 # Optionally add a trusted self-hosted mirror to the race.
 export CLOUD_KERNEL_GITHUB_MIRROR="https://<your-trusted-github-proxy>"
-./install-kernel.sh install --series 6.18
+./install-kernel.sh install --series 6.12
 ```
 
 Options and commands:
@@ -130,7 +129,7 @@ Options and commands:
   - `install`: Directly install the latest kernel in the selected series; defaults to 7.1
   - `help`: Display help information
 - `install` options
-  - `-s, --series, --kernel-series`: Select a kernel series (`6.12`, `6.18`, `7.1`, or `7.2`)
+  - `-s, --series, --kernel-series`: Select a kernel series (`6.12`, `7.1`, or `7.2`)
   - `-v, --version`: Specify a full kernel version; the series is inferred when omitted
   - `-a, --no-reboot`: Skip reboot after installation
   - `--signing-fingerprint`: Optional trusted full OpenPGP fingerprint; `CLOUD_KERNEL_GPG_FINGERPRINT` is also supported
@@ -205,7 +204,7 @@ To start a build manually in GitHub Actions:
 1. Open the repository's **Actions** tab
 2. Select the **Build Cloud Kernel Packages** workflow
 3. Click **Run workflow**
-4. Enter a full kernel version, such as `6.18.15`, and select the target architecture
+4. Enter a full kernel version, such as `7.2.13`, and select the target architecture
 5. Optionally change the **Kernel suffix** input (default: `cloudy`; leave it empty to build without a suffix)
 6. The workflow builds DEB, RPM, and APK packages, plus Arch Linux packages on x86_64. Compatibility checks reuse these artifacts rather than recompiling the kernel for each distribution.
 
