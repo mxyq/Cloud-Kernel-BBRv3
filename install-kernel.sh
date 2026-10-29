@@ -5,7 +5,7 @@
 # ==========================================================================
 # Description: One-click installation script for Cloud Kernel BBRv3
 # Author: AI Assistant
-# Repository: https://github.com/CloudPassenger/Cloud-Kernel-BBRv3
+# Repository: https://github.com/mxyq/Cloud-Kernel-BBRv3
 # Version: 1.0
 # ==========================================================================
 
@@ -15,7 +15,7 @@
 trap 'echo "Error on line $LINENO: $BASH_COMMAND"' ERR
 
 # Global variables
-REPO_API="https://api.github.com/repos/CloudPassenger/Cloud-Kernel-BBRv3"
+REPO_API="https://api.github.com/repos/mxyq/Cloud-Kernel-BBRv3"
 GITHUB_MIRROR="${CLOUD_KERNEL_GITHUB_MIRROR:-}"
 BUILTIN_GITHUB_MIRRORS=(
     "https://github-proxy.memory-echoes.cn"

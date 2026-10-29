@@ -6,8 +6,8 @@
 
 **A Debian custom kernel with BBRv3 / BBRPlus, based on Debian Cloud kernel configuration, optimized for VPS stable operation**
 
-[![CI](https://github.com/CloudPassenger/Cloud-Kernel-BBRv3/actions/workflows/build.yml/badge.svg)](https://github.com/CloudPassenger/Cloud-Kernel-BBRv3/actions/workflows/build.yml)
-[![Upstream Check](https://github.com/CloudPassenger/Cloud-Kernel-BBRv3/actions/workflows/check-upstream.yml/badge.svg)](https://github.com/CloudPassenger/Cloud-Kernel-BBRv3/actions/workflows/check-upstream.yml)
+[![CI](https://github.com/mxyq/Cloud-Kernel-BBRv3/actions/workflows/build.yml/badge.svg)](https://github.com/mxyq/Cloud-Kernel-BBRv3/actions/workflows/build.yml)
+[![Upstream Check](https://github.com/mxyq/Cloud-Kernel-BBRv3/actions/workflows/check-upstream.yml/badge.svg)](https://github.com/mxyq/Cloud-Kernel-BBRv3/actions/workflows/check-upstream.yml)
 [![License](https://img.shields.io/badge/license-mixed-blue.svg)](LICENSE)
 
 ![Kernel Series](https://img.shields.io/badge/kernel-6.12%20%7C%206.18%20%7C%207.1%20%7C%207.2-blue)
@@ -95,7 +95,7 @@ The installer can install the latest kernel from a selected series or an exact v
 
 ```bash
 # Download the installation script
-wget https://raw.githubusercontent.com/CloudPassenger/Cloud-Kernel-BBRv3/main/install-kernel.sh
+wget https://raw.githubusercontent.com/mxyq/Cloud-Kernel-BBRv3/main/install-kernel.sh
 chmod +x install-kernel.sh
 
 # Optional: pin the project's current full OpenPGP primary-key fingerprint (recommended)
@@ -157,7 +157,7 @@ On Alpine Linux, the installer detects and updates every supported bootloader co
 
 x86_64 releases include DEB, RPM, APK, and Arch Linux packages; arm64 releases include DEB, RPM, and APK packages. Every release also includes the prepared kernel source used for that build as `linux-<version>-<architecture>-source.tar.zst`. RPMs target Fedora, RHEL, Rocky Linux, AlmaLinux, CentOS Stream, and Oracle Linux. APKs target Alpine Linux, while Arch Linux packages are built in the official `archlinux:base-devel` environment. RPMs carry native OpenPGP signatures, APKs use a persistent Alpine RSA key, and each Arch Linux package has a detached `.sig` from the release OpenPGP key. The signed `SHA256SUMS.asc` manifest covers every release asset, including the source archive, and the installer verifies all package signatures and checksums before invoking the package manager.
 
-Download the packages for your architecture from [Releases](https://github.com/CloudPassenger/Cloud-Kernel-BBRv3/releases), then install them:
+Download the packages for your architecture from [Releases](https://github.com/mxyq/Cloud-Kernel-BBRv3/releases), then install them:
 
 ```bash
 # Debian / Ubuntu
