@@ -34,8 +34,13 @@ jobs:
             exit 0
           fi
 
-          version=$(basename "$file" .txt)
-          arch=$(tr -d ' \t\r\n' < "$file")
+          version=$(sed -n 's/^version=//p' "$file" | head -n 1 | tr -d ' \t\r\n')
+          arch=$(sed -n 's/^arch=//p' "$file" | head -n 1 | tr -d ' \t\r\n')
+
+          if [ -z "$version" ] || [ -z "$arch" ]; then
+            echo "Request file $file needs version= and arch= lines" >&2
+            exit 1
+          fi
           case "$arch" in
             x86_64|arm64) ;;
             *)

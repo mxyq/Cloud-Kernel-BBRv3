@@ -11,4 +11,5 @@
 [submodule "vendor/amneziawg"]
 	path = vendor/amneziawg
 	url = https://github.com/amnezia-vpn/amneziawg-linux-kernel-module.git
+	branch = master
 	shallow = true
