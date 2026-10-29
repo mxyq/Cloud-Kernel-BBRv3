@@ -256,6 +256,13 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.23
         with:
           key: kernel-${{ needs.prepare.outputs.kernel_series }}-${{ needs.prepare.outputs.debian_arch }}
+          # Fall back to older caches of the same series/arch so a patch-level
+          # bump (7.2.13 -> 7.2.14) only rebuilds what actually changed.
+          restore-keys: |
+            kernel-${{ needs.prepare.outputs.kernel_series }}-${{ needs.prepare.outputs.debian_arch }}-
+            kernel-${{ needs.prepare.outputs.kernel_series }}-
+          max-size: 2G
+          verbose: 1
 
       - name: Compile Kernel
         env:
