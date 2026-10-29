@@ -32,7 +32,12 @@ DOWNLOAD_DIR=""
 DOWNLOAD_DIR_IS_TEMP=false
 AUTO_MIRRORS=false
 SUPPORTED_SERIES=("6.12" "6.18" "7.1" "7.2")
+# Interactive menu. The last entry always installs the newest release
+# whatever series upstream publishes, so it never needs maintenance.
+MENU_OPTIONS=("6.12" "6.18" "latest")
 DEFAULT_SERIES="7.1"
+DEFAULT_MENU_OPTION="latest"
+SELECT_LATEST=false
 KERNEL_SERIES=""
 ARCH=""
 LANGUAGE="zh"  # Default language: Chinese
@@ -93,6 +98,8 @@ STRINGS[en,no_series_releases]="No releases found for the selected kernel series
 STRINGS[en,select_series]="Select a kernel series:"
 STRINGS[en,select_version]="Select kernel version to install:"
 STRINGS[en,default_series]="default"
+STRINGS[en,latest_option]="latest (newest release)"
+STRINGS[en,using_latest]="Using the latest release"
 STRINGS[en,latest_recommended]="Latest version in this series!"
 STRINGS[en,using_series]="Using kernel series:"
 STRINGS[en,selected]="Selected:"
@@ -152,7 +159,7 @@ STRINGS[en,help_help]="help       Show this help message"
 STRINGS[en,help_options]="Options:"
 STRINGS[en,help_language]="  -l, --language    Set language (zh/en)"
 STRINGS[en,help_install_options]="Options for 'install' command:"
-STRINGS[en,help_series]="  -s, --series, --kernel-series    Select kernel series (6.12/6.18/7.1/7.2; default: 7.1)"
+STRINGS[en,help_series]="  -s, --series, --kernel-series    Select kernel series (6.12/6.18/7.1/7.2 or latest; default: latest)"
 STRINGS[en,help_version]="  -v, --version     Specify full kernel version (infers series when -s is omitted)"
 STRINGS[en,help_no_reboot]="  -a, --no-reboot   Skip reboot after installation"
 STRINGS[en,help_headers]="      --headers       Also install kernel headers/development files"
@@ -188,6 +195,8 @@ STRINGS[zh,no_series_releases]="未找到适用于所选内核系列和系统架
 STRINGS[zh,select_series]="请选择内核系列："
 STRINGS[zh,select_version]="选择要安装的内核版本："
 STRINGS[zh,default_series]="默认"
+STRINGS[zh,latest_option]="latest（自动获取最新版本）"
+STRINGS[zh,using_latest]="使用最新版本"
 STRINGS[zh,latest_recommended]="此系列的最新版本！"
 STRINGS[zh,using_series]="使用内核系列："
 STRINGS[zh,selected]="已选择："
@@ -247,7 +256,7 @@ STRINGS[zh,help_help]="help       显示此帮助信息"
 STRINGS[zh,help_options]="选项："
 STRINGS[zh,help_language]="  -l, --language    设置语言 (zh/en)"
 STRINGS[zh,help_install_options]="'install' 命令的选项："
-STRINGS[zh,help_series]="  -s, --series, --kernel-series    选择内核系列 (6.12/6.18/7.1/7.2；默认：7.1)"
+STRINGS[zh,help_series]="  -s, --series, --kernel-series    选择内核系列 (6.12/6.18/7.1/7.2 或 latest；默认：latest)"
 STRINGS[zh,help_version]="  -v, --version     指定完整内核版本（未设置 -s 时自动推断系列）"
 STRINGS[zh,help_no_reboot]="  -a, --no-reboot   安装后不重启"
 STRINGS[zh,help_headers]="      --headers       同时安装内核头文件和开发文件"
@@ -705,26 +714,41 @@ select_kernel_series() {
     print_colored "${PURPLE}" "$(get_string select_series)"
     echo ""
 
-    local i
-    for i in "${!SUPPORTED_SERIES[@]}"; do
-        if [ "${SUPPORTED_SERIES[$i]}" = "$DEFAULT_SERIES" ]; then
-            echo "$((i + 1))) ${SUPPORTED_SERIES[$i]} ($(get_string default_series))"
+    local i option label
+    for i in "${!MENU_OPTIONS[@]}"; do
+        option="${MENU_OPTIONS[$i]}"
+        if [ "$option" = "latest" ]; then
+            label="$(get_string latest_option)"
         else
-            echo "$((i + 1))) ${SUPPORTED_SERIES[$i]}"
+            label="$option"
+        fi
+
+        if [ "$option" = "$DEFAULT_MENU_OPTION" ]; then
+            echo "$((i + 1))) $label ($(get_string default_series))"
+        else
+            echo "$((i + 1))) $label"
         fi
     done
 
     echo ""
     local choice
-    read -r -p "$(get_string enter_choice) [1-${#SUPPORTED_SERIES[@]}]: " choice
+    read -r -p "$(get_string enter_choice) [1-${#MENU_OPTIONS[@]}]: " choice
 
-    if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#SUPPORTED_SERIES[@]}" ]; then
-        KERNEL_SERIES="${SUPPORTED_SERIES[$((choice - 1))]}"
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#MENU_OPTIONS[@]}" ]; then
+        choice="${MENU_OPTIONS[$((choice - 1))]}"
     else
-        KERNEL_SERIES="$DEFAULT_SERIES"
+        choice="$DEFAULT_MENU_OPTION"
     fi
 
-    print_colored "${GREEN}" "✓ $(get_string using_series) $KERNEL_SERIES"
+    if [ "$choice" = "latest" ]; then
+        KERNEL_SERIES=""
+        SELECT_LATEST=true
+        print_colored "${GREEN}" "✓ $(get_string using_latest)"
+    else
+        KERNEL_SERIES="$choice"
+        SELECT_LATEST=false
+        print_colored "${GREEN}" "✓ $(get_string using_series) $KERNEL_SERIES"
+    fi
 }
 
 # Validate and normalize command-line kernel selection options
@@ -746,8 +770,14 @@ validate_kernel_selection() {
         fi
     fi
 
-    if [ "$COMMAND" = "install" ] && [ -z "$KERNEL_SERIES" ]; then
-        KERNEL_SERIES="$DEFAULT_SERIES"
+    if [ "$KERNEL_SERIES" = "latest" ]; then
+        KERNEL_SERIES=""
+        SELECT_LATEST=true
+    fi
+
+    if [ "$COMMAND" = "install" ] && [ -z "$KERNEL_SERIES" ] && [ -z "$SPECIFIED_VERSION" ]; then
+        # No series and no pinned version: install whatever is released newest.
+        SELECT_LATEST=true
     fi
 
     if [ -n "$KERNEL_SERIES" ] && ! is_supported_series "$KERNEL_SERIES"; then
@@ -868,7 +898,11 @@ check_arch() {
 # Fetch available releases from GitHub
 fetch_releases() {
     print_colored "${CYAN}" "$(get_string fetching_releases)"
-    print_colored "${CYAN}" "$(get_string using_series) $KERNEL_SERIES"
+    if [ "$SELECT_LATEST" = true ]; then
+        print_colored "${CYAN}" "$(get_string using_latest)"
+    else
+        print_colored "${CYAN}" "$(get_string using_series) $KERNEL_SERIES"
+    fi
 
 
     # Get up to 100 releases so older maintained series remain selectable.
@@ -909,7 +943,13 @@ fetch_releases() {
         asset_upload_time="${asset_upload_time%Z}"
         base_tag="${tag%-arm64}"
 
-        if [[ ! "$base_tag" =~ ^${series_pattern}\.[0-9]+$ ]]; then
+        if [ "$SELECT_LATEST" = true ]; then
+            # Newest release regardless of series; skip tags that are not a
+            # plain kernel version.
+            if [[ ! "$base_tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                continue
+            fi
+        elif [[ ! "$base_tag" =~ ^${series_pattern}\.[0-9]+$ ]]; then
             continue
         fi
 
@@ -921,7 +961,11 @@ fetch_releases() {
     done <<< "$releases_info"
 
     if [ "${#filtered_releases[@]}" -eq 0 ]; then
-        print_colored "${RED}" "$(get_string no_series_releases) $KERNEL_SERIES / $ARCH"
+        if [ "$SELECT_LATEST" = true ]; then
+            print_colored "${RED}" "$(get_string no_releases)"
+        else
+            print_colored "${RED}" "$(get_string no_series_releases) $KERNEL_SERIES / $ARCH"
+        fi
         exit 1
     fi
 
@@ -1756,8 +1800,10 @@ main() {
 
     if [ "$COMMAND" = "interactive" ]; then
         select_language
-        if [ -z "$KERNEL_SERIES" ]; then
+        if [ -z "$KERNEL_SERIES" ] && [ "$SELECT_LATEST" != true ]; then
             select_kernel_series
+        elif [ "$SELECT_LATEST" = true ]; then
+            print_colored "${GREEN}" "✓ $(get_string using_latest)"
         else
             print_colored "${GREEN}" "✓ $(get_string using_series) $KERNEL_SERIES"
         fi
