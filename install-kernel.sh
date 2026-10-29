@@ -31,6 +31,10 @@ MIRROR_PROBE_DIR=""
 DOWNLOAD_DIR=""
 DOWNLOAD_DIR_IS_TEMP=false
 AUTO_MIRRORS=false
+# Newest release known when this copy of the script was published. The menu
+# refreshes it over the user's own network on startup, so this value only
+# matters when that probe fails (offline, blocked, rate limited).
+BUILTIN_LATEST_VERSION="7.2.13"
 SUPPORTED_SERIES=("6.12" "6.18" "7.1" "7.2")
 # Interactive menu. The last entry always installs the newest release
 # whatever series upstream publishes, so it never needs maintenance.
@@ -38,6 +42,7 @@ MENU_OPTIONS=("6.12" "6.18" "latest")
 DEFAULT_SERIES="7.1"
 DEFAULT_MENU_OPTION="latest"
 SELECT_LATEST=false
+LATEST_VERSION_RESOLVED=""
 KERNEL_SERIES=""
 ARCH=""
 LANGUAGE="zh"  # Default language: Chinese
@@ -98,7 +103,7 @@ STRINGS[en,no_series_releases]="No releases found for the selected kernel series
 STRINGS[en,select_series]="Select a kernel series:"
 STRINGS[en,select_version]="Select kernel version to install:"
 STRINGS[en,default_series]="default"
-STRINGS[en,latest_option]="latest (newest release)"
+STRINGS[en,latest_word]="latest"
 STRINGS[en,using_latest]="Using the latest release"
 STRINGS[en,latest_recommended]="Latest version in this series!"
 STRINGS[en,using_series]="Using kernel series:"
@@ -195,7 +200,7 @@ STRINGS[zh,no_series_releases]="未找到适用于所选内核系列和系统架
 STRINGS[zh,select_series]="请选择内核系列："
 STRINGS[zh,select_version]="选择要安装的内核版本："
 STRINGS[zh,default_series]="默认"
-STRINGS[zh,latest_option]="latest（自动获取最新版本）"
+STRINGS[zh,latest_word]="latest"
 STRINGS[zh,using_latest]="使用最新版本"
 STRINGS[zh,latest_recommended]="此系列的最新版本！"
 STRINGS[zh,using_series]="使用内核系列："
@@ -349,6 +354,32 @@ github_mirror_url() {
 
 github_curl() {
     curl -fsSL --connect-timeout 10 --max-time 10 --retry 0 "$1"
+}
+
+# Resolve the newest release tag over the user's own network, with a short
+# timeout. Deliberately avoids jq because the interactive menu runs before the
+# dependencies are installed; a failure simply leaves BUILTIN_LATEST_VERSION
+# in charge.
+probe_latest_release_version() {
+    local response tag
+
+    command -v curl >/dev/null 2>&1 || return 1
+    response=$(curl -fsSL --connect-timeout 4 --max-time 5 --retry 0 \
+        "${REPO_API}/releases/latest" 2>/dev/null) || return 1
+    [ -n "$response" ] || return 1
+
+    tag=$(printf '%s' "$response" \
+        | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' \
+        | head -n 1 \
+        | sed -e 's/.*"\([^"]*\)"$/\1/')
+    tag="${tag%-arm64}"
+
+    if [[ "$tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        printf '%s' "$tag"
+        return 0
+    fi
+
+    return 1
 }
 
 github_response_matches() {
@@ -714,11 +745,24 @@ select_kernel_series() {
     print_colored "${PURPLE}" "$(get_string select_series)"
     echo ""
 
+    # Resolve the version the "latest" entry stands for, so the menu shows a
+    # real version number instead of a generic label.
+    local latest_version
+    latest_version=$(probe_latest_release_version 2>/dev/null || true)
+    if [ -z "$latest_version" ]; then
+        latest_version="$BUILTIN_LATEST_VERSION"
+    fi
+    LATEST_VERSION_RESOLVED="$latest_version"
+
     local i option label
     for i in "${!MENU_OPTIONS[@]}"; do
         option="${MENU_OPTIONS[$i]}"
         if [ "$option" = "latest" ]; then
-            label="$(get_string latest_option)"
+            if [ -n "$latest_version" ]; then
+                label="$latest_version ($(get_string latest_word))"
+            else
+                label="$(get_string latest_word)"
+            fi
         else
             label="$option"
         fi
@@ -743,7 +787,11 @@ select_kernel_series() {
     if [ "$choice" = "latest" ]; then
         KERNEL_SERIES=""
         SELECT_LATEST=true
-        print_colored "${GREEN}" "✓ $(get_string using_latest)"
+        if [ -n "$LATEST_VERSION_RESOLVED" ]; then
+            print_colored "${GREEN}" "✓ $(get_string using_latest) $LATEST_VERSION_RESOLVED"
+        else
+            print_colored "${GREEN}" "✓ $(get_string using_latest)"
+        fi
     else
         KERNEL_SERIES="$choice"
         SELECT_LATEST=false
@@ -1803,7 +1851,11 @@ main() {
         if [ -z "$KERNEL_SERIES" ] && [ "$SELECT_LATEST" != true ]; then
             select_kernel_series
         elif [ "$SELECT_LATEST" = true ]; then
-            print_colored "${GREEN}" "✓ $(get_string using_latest)"
+            if [ -n "$LATEST_VERSION_RESOLVED" ]; then
+                print_colored "${GREEN}" "✓ $(get_string using_latest) $LATEST_VERSION_RESOLVED"
+            else
+                print_colored "${GREEN}" "✓ $(get_string using_latest)"
+            fi
         else
             print_colored "${GREEN}" "✓ $(get_string using_series) $KERNEL_SERIES"
         fi

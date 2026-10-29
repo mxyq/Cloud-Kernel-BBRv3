@@ -1146,3 +1146,35 @@ jobs:
             release-assets/*.rsa.pub
             release-assets/*.asc
             release-assets/SHA256SUMS
+
+      - name: Record Released Version in Installer
+        if: github.ref == 'refs/heads/main' && needs.prepare.outputs.arch == 'x86_64'
+        run: |
+          version="${{ needs.prepare.outputs.kernel_version }}"
+          current=$(sed -n 's/^BUILTIN_LATEST_VERSION="\(.*\)"$/\1/p' install-kernel.sh)
+          if [ "$current" = "$version" ]; then
+            echo "installer already records $version"
+            exit 0
+          fi
+
+          sed -i "s/^BUILTIN_LATEST_VERSION=.*/BUILTIN_LATEST_VERSION=\"$version\"/" install-kernel.sh
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add install-kernel.sh
+          git commit -m "chore(installer): record released version $version"
+
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "recorded $version in install-kernel.sh"
+              exit 0
+            fi
+            git fetch origin main
+            if git show origin/main:install-kernel.sh 2>/dev/null \
+                | grep -qx "BUILTIN_LATEST_VERSION=\"$version\""; then
+              echo "another run already recorded $version"
+              exit 0
+            fi
+            git rebase FETCH_HEAD || git rebase --abort || true
+          done
+
+          echo "::warning::could not push the installer version bump"
