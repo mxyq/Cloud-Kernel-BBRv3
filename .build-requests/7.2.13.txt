@@ -3,3 +3,4 @@
 version=7.2.13
 arch=x86_64
 diagnostic=false
+# retry 2026-10-29: strncpy replaced with memcpy for Linux 7.2

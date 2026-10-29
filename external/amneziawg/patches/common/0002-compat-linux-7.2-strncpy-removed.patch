@@ -1,0 +1,38 @@
+From: Cloud Kernel BBRv3 Maintainers <noreply@cloud-kernel-bbrv3.invalid>
+Subject: [PATCH] compat: replace strncpy() which Linux 7.2 removed
+
+Linux 7.2 dropped strncpy() from the kernel API after a six-year
+deprecation cycle, so out-of-tree users fail to compile with:
+
+  netlink.c:175:9: error: implicit declaration of function 'strncpy'
+
+Both call sites copy a length-checked substring and terminate it
+manually, which is exactly what memcpy() is for, and that works on
+every kernel series this project builds.
+
+---
+ netlink.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/netlink.c b/netlink.c
+index b1da877..0901a18 100644
+--- a/netlink.c
++++ b/netlink.c
+@@ -172,7 +172,7 @@ static inline int parse_ipv4_prefix(const char *prefix_str, struct ipv4_prefix *
+ 	if (slash - prefix_str >= INET_ADDRSTRLEN)
+ 		return -EINVAL;
+ 
+-	strncpy(addr_str, prefix_str, slash - prefix_str);
++	memcpy(addr_str, prefix_str, slash - prefix_str);
+ 	addr_str[slash - prefix_str] = '\0';
+ 
+ 	ret = kstrtoint(slash + 1, 10, &prefix->prefix_len);
+@@ -231,7 +231,7 @@ static inline int parse_ipv6_prefix(const char *prefix_str, struct ipv6_prefix *
+ 	if (slash - prefix_str >= INET6_ADDRSTRLEN)
+ 		return -EINVAL;
+ 
+-	strncpy(addr_str, prefix_str, slash - prefix_str);
++	memcpy(addr_str, prefix_str, slash - prefix_str);
+ 	addr_str[slash - prefix_str] = '\0';
+ 
+ 	ret = kstrtoint(slash + 1, 10, &prefix->prefix_len);
