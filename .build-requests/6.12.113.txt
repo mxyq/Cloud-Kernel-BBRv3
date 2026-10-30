@@ -3,3 +3,4 @@
 version=6.12.113
 arch=x86_64
 diagnostic=false
+# first build on the frozen-base-source pipeline
