@@ -200,8 +200,17 @@ jobs:
             ( cd "$RUNNER_TEMP" && sha256sum -c "$asset.sha256" )
           else
             echo "Base source not published yet; generating it."
-            if ! bash .github/scripts/generate_base_source.sh \
-                "$KERNEL_VERSION" "$RUNNER_TEMP/base-work" "$out" \
+            set +e
+            bash .github/scripts/generate_base_source.sh \
+              "$KERNEL_VERSION" "$RUNNER_TEMP/base-work" "$out" \
+              > "$RUNNER_TEMP/base-gen.log" 2>&1
+            gen_status=$?
+            set -e
+            if [ $gen_status -ne 0 ]; then
+              echo "::error title=base source generation failed::$(tail -n 12 "$RUNNER_TEMP/base-gen.log" | tr '\n' '|' | head -c 900)"
+              tail -n 25 "$RUNNER_TEMP/base-gen.log"
+              exit 1
+            fi
                 2>&1 | tee "$RUNNER_TEMP/base-gen.log"; then
               echo "::error title=base source generation failed::$(tail -n 12 \"$RUNNER_TEMP/base-gen.log\" | tr '\n' '|' | head -c 900)"
               exit 1
