@@ -1,0 +1,3 @@
+# Netfilter patches not used by this VPS kernel profile.
+netfilter/0001-netfilter-Add-netfilter-nf_tables-fullcone-support.patch
+netfilter/0002-netfilter-add-xt_FLOWOFFLOAD-target.patch

@@ -1,1 +1,3 @@
-# XanMod patches excluded for Linux 7.2 after diagnostic verification.
+# Netfilter patches not used by this VPS kernel profile.
+netfilter/0001-netfilter-Add-netfilter-nf_tables-fullcone-support.patch
+netfilter/0001-netfilter-add-xt_FLOWOFFLOAD-target.patch
