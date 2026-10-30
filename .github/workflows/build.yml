@@ -207,7 +207,7 @@ jobs:
             gen_status=$?
             set -e
             if [ $gen_status -ne 0 ]; then
-              echo "::error title=base source generation failed::$(grep -iE 'curl:|error|failed|not found|Cannot open' "$RUNNER_TEMP/base-gen.log" | tail -n 4 | tr '\n' '|' | head -c 900)"
+              echo "::error title=base gen failed (exit $gen_status)::$(head -c 800 \"$RUNNER_TEMP/base-gen.log\" 2>/dev/null | tr '\n' '|')"
               tail -n 25 "$RUNNER_TEMP/base-gen.log"
               exit 1
             fi
