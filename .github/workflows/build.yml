@@ -208,7 +208,8 @@ jobs:
             gen_status=$?
             set -e
             if [ $gen_status -ne 0 ]; then
-              echo "::error title=base gen failed (exit $gen_status)::$(head -c 800 \"$RUNNER_TEMP/base-gen.log\" 2>/dev/null | tr '\n' '|')"
+              msg=$(head -c 700 \"$RUNNER_TEMP/base-gen.log\" 2>/dev/null | tr '\n' '|' | sed 's/%/%25/g; s/\r//g')
+              echo "::error title=base gen failed (exit $gen_status)::${msg}"
               tail -n 25 "$RUNNER_TEMP/base-gen.log"
               exit 1
             fi
