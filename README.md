@@ -10,7 +10,7 @@
 [![Upstream Check](https://github.com/mxyq/Cloud-Kernel-BBRv3/actions/workflows/check-upstream.yml/badge.svg)](https://github.com/mxyq/Cloud-Kernel-BBRv3/actions/workflows/check-upstream.yml)
 [![License](https://img.shields.io/badge/license-mixed-blue.svg)](LICENSE)
 
-![Kernel Series](https://img.shields.io/badge/kernel-6.12%20%7C%207.2-blue)
+![Kernel Series](https://img.shields.io/badge/kernel-6.1%20%7C%206.12%20%7C%207.2-blue)
 ![BBRv3](https://img.shields.io/badge/BBR-v3-brightgreen)
 ![BBRPlus](https://img.shields.io/badge/BBR-Plus-orange)
 ![EEVDF](https://img.shields.io/badge/scheduler-EEVDF-blueviolet)
@@ -26,6 +26,7 @@
 
 | 系列　 | 定位 | x86_64 | arm64 | 自动更新 |
 | --------| :----:| :------:| :-----:| :--------:|
+| `6.1` | LTS (Debian 12) |
 | `6.12` | LTS　| ✅      | ✅     | ✅　　　　|
 | `7.2`　| 主线 | ✅      | ✅     | ✅　　　　|
 
@@ -55,7 +56,7 @@ RPM 软件包面向主流的 DNF/RPM 生态，覆盖 Fedora、Red Hat Enterprise
 > 早期未带后缀的旧版本不受影响；若之前安装过无后缀版本，升级后新旧内核会共存，确认新内核可正常启动后，可自行移除旧包。
 
 本仓库基于同一份打过补丁、完成配置解析的源码，自动构建多种格式的内核软件包：
-- 采用 Linux 内核官方源码（6.12 / 7.2 系列，来自 [kernel.org](https://www.kernel.org/)）
+- 采用 Linux 内核官方源码（6.1 / 6.12 / 7.2 系列，来自 [kernel.org](https://www.kernel.org/)）
 - 集成 Debian 内核团队维护的补丁（来自 [kernel-team/linux](https://salsa.debian.org/kernel-team/linux/)）
 - 上述外置补丁源（Debian 内核、XanMod、AmneziaWG）统一以 Git submodule 固定在 `vendor/` 下，由 `.gitmodules` 声明来源；构建时按上游最新树浅拉取，具体版本仍由内核版本号与 `source.env` 锁定，并写入 `build-manifest.json`
 - **BBR 拥塞控制算法增强**
@@ -71,7 +72,7 @@ RPM 软件包面向主流的 DNF/RPM 生态，覆盖 Fedora、Red Hat Enterprise
 
 | 组件 | 详细信息 |
 | --- | --- |
-| 内核基础 | 6.12 / 7.2 系列，并集成 Debian 团队补丁 |
+| 内核基础 | 6.1 / 6.12 / 7.2 系列，并集成 Debian 团队补丁 |
 | 网络优化 | BBRv3（内置并设为默认）/ BBRPlus / BBRv1（模块形式），AmneziaWG 内核模块，默认使用 `sch_fq` qdisc |
 | CPU 调度器 | 上游 EEVDF 公平调度器 |
 | 内存策略 | THP 使用 `madvise` 模式；禁用 autogroup，关闭 NUMA 默认均衡 |
@@ -127,7 +128,7 @@ export CLOUD_KERNEL_GITHUB_MIRROR="https://<your-trusted-github-proxy>"
   - `install`：直接安装所选系列的最新内核；未指定系列时默认安装最新版本
   - `help`：显示帮助信息
 - `install` 命令参数
-  - `-s, --series, --kernel-series`：选择内核系列（`6.12` 或 `7.2`）
+  - `-s, --series, --kernel-series`：选择内核系列（`6.1`、`6.12` 或 `7.2`）
   - `-v, --version`：指定完整的内核版本；未指定系列时自动从版本号推断
   - `-a, --no-reboot`：安装后不自动重启
   - `--signing-fingerprint`：可选；指定可信 OpenPGP 完整指纹，也可设置 `CLOUD_KERNEL_GPG_FINGERPRINT`
