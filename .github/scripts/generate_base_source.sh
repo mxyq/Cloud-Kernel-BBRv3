@@ -57,7 +57,9 @@ printf 'Extracting...\n'
 if ! tar -xJf "$work_dir/linux-$kernel_version.tar.xz" -C "$work_dir"; then
   fail "failed to extract linux-$kernel_version.tar.xz"
 fi
-mv "$work_dir/linux-$kernel_version" "$tree_dir"
+# The tarball already unpacks to $work_dir/linux-<version>, which is exactly
+# $tree_dir -- moving it "into place" would mean moving it into itself.
+[ -d "$tree_dir" ] || fail "unexpected tarball layout: $tree_dir missing after extraction"
 rm -f "$work_dir/linux-$kernel_version.tar.xz"
 
 # --- Debian patch series, pinned to the release tag ---
