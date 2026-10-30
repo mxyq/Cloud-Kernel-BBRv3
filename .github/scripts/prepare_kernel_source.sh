@@ -40,6 +40,10 @@ kernel_dir=$work_dir/linux
 debian_dir=$repo_root/vendor/linux-debian
 xanmod_dir=$repo_root/vendor/xanmod-patches
 source_archive=$work_dir/linux-$kernel_version.tar.xz
+# When set, this points at a frozen "vanilla + Debian patches" tree produced by
+# generate_base_source.sh; everything below Debian's patch application is then
+# skipped and only XanMod/project patches are layered on top.
+base_source_tar=${BASE_SOURCE_TAR:-}
 
 require_submodule() {
   local dir=$1 rel=$2
@@ -65,16 +69,24 @@ if [ -e "$kernel_dir" ]; then
   exit 1
 fi
 
-require_submodule "$debian_dir" vendor/linux-debian
+if [ -z "$base_source_tar" ]; then
+  require_submodule "$debian_dir" vendor/linux-debian
+fi
 require_submodule "$xanmod_dir" vendor/xanmod-patches
 
-printf 'Downloading Linux %s source...\n' "$kernel_version"
-curl --fail --location --retry 3 \
-  --output "$source_archive" \
-  "https://cdn.kernel.org/pub/linux/kernel/v${kernel_major}.x/linux-${kernel_version}.tar.xz"
-tar -xJf "$source_archive" -C "$work_dir"
-mv "$work_dir/linux-$kernel_version" "$kernel_dir"
-rm -f "$source_archive"
+if [ -n "$base_source_tar" ]; then
+  printf 'Using frozen Debian base source: %s\n' "$(basename "$base_source_tar")"
+  tar -xJf "$base_source_tar" -C "$work_dir"
+  mv "$work_dir/linux-$kernel_version" "$kernel_dir"
+else
+  printf 'Downloading Linux %s source...\n' "$kernel_version"
+  curl --fail --location --retry 3 \
+    --output "$source_archive" \
+    "https://cdn.kernel.org/pub/linux/kernel/v${kernel_major}.x/linux-${kernel_version}.tar.xz"
+  tar -xJf "$source_archive" -C "$work_dir"
+  mv "$work_dir/linux-$kernel_version" "$kernel_dir"
+  rm -f "$source_archive"
+fi
 
 printf 'Checking out Debian tag debian/%s-1 in %s...\n' "$kernel_version" "$debian_dir"
 if ! git -C "$debian_dir" fetch --depth=1 origin \
@@ -104,7 +116,9 @@ if [ -d "$xanmod_fix_dir" ]; then
   done
 fi
 
-cp -R "$debian_dir/debian/patches" "$kernel_dir/patches"
+if [ -z "$base_source_tar" ]; then
+  cp -R "$debian_dir/debian/patches" "$kernel_dir/patches"
+fi
 
 xanmod_net_dir=$xanmod_dir/linux-${kernel_major}.${kernel_minor}.y-xanmod/net
 if [ ! -d "$xanmod_net_dir" ]; then

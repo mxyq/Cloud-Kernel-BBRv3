@@ -169,10 +169,54 @@ jobs:
             echo "TAG_SUFFIX=$TAG_SUFFIX"
           } >> "$GITHUB_OUTPUT"
 
+  ensure-base-source:
+    name: Ensure Debian Base Source for ${{ needs.prepare.outputs.kernel_version }}
+    runs-on: ${{ needs.prepare.outputs.runner }}
+    needs: prepare
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout Workflow Source Code
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Install quilt
+        run: sudo apt-get update && sudo apt-get install -y quilt
+
+      - name: Ensure base source exists
+        id: ensure
+        env:
+          KERNEL_VERSION: ${{ needs.prepare.outputs.kernel_version }}
+        run: |
+          asset="linux-${KERNEL_VERSION}-debian-base.tar.xz"
+          out="$RUNNER_TEMP/$asset"
+          if gh release view "$KERNEL_VERSION" --json assets \
+              --jq '.assets[].name' 2>/dev/null | grep -qx "$asset"; then
+            echo "Base source already published; downloading it."
+            gh release download "$KERNEL_VERSION" --pattern "$asset" --output "$out"
+            gh release download "$KERNEL_VERSION" --pattern "$asset.sha256" \
+              --output "$out.sha256" 2>/dev/null || true
+            ( cd "$RUNNER_TEMP" && sha256sum -c "$asset.sha256" )
+          else
+            echo "Base source not published yet; generating it."
+            bash .github/scripts/generate_base_source.sh \
+              "$KERNEL_VERSION" "$RUNNER_TEMP/base-work" "$out"
+            sha256sum "$out" > "$out.sha256"
+          fi
+
+      - name: Upload base source artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: base-source-${{ needs.prepare.outputs.kernel_version }}
+          path: ${{ runner.temp }}/linux-*-${{ needs.prepare.outputs.kernel_version }}-debian-base*
+          retention-days: 7
+          if-no-files-found: error
+
   prepare-source:
     name: Prepare Patched Source for ${{ needs.prepare.outputs.arch }}
     runs-on: ${{ needs.prepare.outputs.runner }}
-    needs: prepare
+    needs: [prepare, ensure-base-source]
     steps:
       - name: Install Source Preparation Dependencies
         run: |
@@ -186,6 +230,12 @@ jobs:
         with:
           fetch-tags: true
 
+      - name: Download Frozen Base Source
+        uses: actions/download-artifact@v4
+        with:
+          name: base-source-${{ needs.prepare.outputs.kernel_version }}
+          path: /tmp/base-source
+
       - name: Fetch External Patch Sources
         run: bash .github/scripts/fetch_external_sources.sh
 
@@ -195,6 +245,7 @@ jobs:
       - name: Prepare Shared Kernel Source
         env:
           KERNEL_LOCALVERSION: ${{ needs.prepare.outputs.localversion }}
+          BASE_SOURCE_TAR: /tmp/base-source/linux-${{ needs.prepare.outputs.kernel_version }}-debian-base.tar.xz
         run: |
           bash .github/scripts/prepare_kernel_source.sh \
             "${{ needs.prepare.outputs.kernel_version }}" \
