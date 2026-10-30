@@ -3,4 +3,4 @@
 version=6.12.113
 arch=x86_64
 diagnostic=false
-# rebuild 8: publish base source, fixed artifact glob
+# rebuild 9: recreate patches/ for the layered series

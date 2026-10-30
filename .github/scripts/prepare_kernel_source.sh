@@ -126,6 +126,9 @@ fi
 if [ -z "$base_source_tar" ]; then
   cp -R "$debian_dir/debian/patches" "$kernel_dir/patches"
 fi
+# The frozen base has patches/ stripped (its content is already applied), so
+# recreate the directory the XanMod and custom layers are copied into.
+mkdir -p "$kernel_dir/patches"
 
 xanmod_net_dir=$xanmod_dir/linux-${kernel_major}.${kernel_minor}.y-xanmod/net
 if [ ! -d "$xanmod_net_dir" ]; then
