@@ -26,7 +26,7 @@ debian_dir=$repo_root/vendor/linux-debian
 mkdir -p "$work_dir"
 tree_dir=$work_dir/linux-$kernel_version
 if [ -e "$tree_dir" ]; then
-  printf 'error: work path already exists: %s\n' "$tree_dir" >&2
+  printf '::error::error: work path already exists: %s\n' "$tree_dir" >&2
   exit 1
 fi
 
@@ -39,12 +39,12 @@ expected=$(curl --fail --location --retry 3 --silent \
   "https://cdn.kernel.org/pub/linux/kernel/v${kernel_major}.x/sha256sums.asc" \
   | sed -n "s/^\\([0-9a-f]\\{64\\}\\)  linux-$kernel_version\\.tar\\.xz$/\\1/p")
 if [ -z "$expected" ]; then
-  printf 'error: sha256 for linux-%s.tar.xz not found\n' "$kernel_version" >&2
+  printf '::error::error: sha256 for linux-%s.tar.xz not found\n' "$kernel_version" >&2
   exit 1
 fi
 actual=$(sha256sum "$work_dir/linux-$kernel_version.tar.xz" | cut -d' ' -f1)
 if [ "$actual" != "$expected" ]; then
-  printf 'error: vanilla source sha256 mismatch (%s != %s)\n' "$actual" "$expected" >&2
+  printf '::error::error: vanilla source sha256 mismatch (%s != %s)\n' "$actual" "$expected" >&2
   exit 1
 fi
 tar -xJf "$work_dir/linux-$kernel_version.tar.xz" -C "$work_dir"
@@ -53,7 +53,7 @@ rm -f "$work_dir/linux-$kernel_version.tar.xz"
 
 # --- Debian patch series, pinned to the release tag ---
 if [ ! -e "$debian_dir/.git" ]; then
-  printf 'error: submodule vendor/linux-debian is not initialized\n' >&2
+  printf '::error::error: submodule vendor/linux-debian is not initialized\n' >&2
   exit 1
 fi
 git -C "$debian_dir" fetch --depth=1 origin "refs/tags/debian/$kernel_version-1"
