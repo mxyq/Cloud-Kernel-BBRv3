@@ -3,4 +3,4 @@
 version=6.12.113
 arch=x86_64
 diagnostic=false
-# rebuild 5: dump generation log into the annotation
+# rebuild 6: base source optional, legacy fallback

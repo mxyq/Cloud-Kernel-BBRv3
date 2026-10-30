@@ -44,6 +44,13 @@ source_archive=$work_dir/linux-$kernel_version.tar.xz
 # generate_base_source.sh; everything below Debian's patch application is then
 # skipped and only XanMod/project patches are layered on top.
 base_source_tar=${BASE_SOURCE_TAR:-}
+# The frozen base is optional: a failed or skipped generation must not block a
+# build, it only falls back to applying the Debian series here.
+if [ -n "$base_source_tar" ] && [ ! -f "$base_source_tar" ]; then
+  printf 'warning: base source %s is missing; falling back to the Debian patch series\n' \
+    "$base_source_tar" >&2
+  base_source_tar=''
+fi
 
 require_submodule() {
   local dir=$1 rel=$2
