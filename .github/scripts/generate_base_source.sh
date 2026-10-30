@@ -6,7 +6,7 @@
 set -euo pipefail
 
 usage() {
-  printf 'usage: %s <kernel-version> <work-dir> <output-file>\n' "$(basename "$0")" >&2
+  printf '::error::usage: %s <kernel-version> <work-dir> <output-file>\n' "$(basename "$0")" >&2
   exit 1
 }
 
