@@ -1,13 +1,1 @@
-# XanMod patches that must not be applied to the Linux 7.2 series.
-#
-# Linux 7.2 dropped the xt_FLOWOFFLOAD target and reorganised the netfilter
-# headers (include/net/netfilter/nf_conn.h moved to
-# include/linux/netfilter/, include/net/device.h to include/linux/netdevice.h),
-# so these patches no longer build:
-#
-#   net/netfilter/xt_FLOWOFFLOAD.c:387: error: passing argument 1 of
-#   'dev_fill_forward_path' from incompatible pointer type
-#
-# The TCP patches (BBRv3 and friends) are unaffected and stay enabled.
-netfilter/0001-netfilter-add-xt_FLOWOFFLOAD-target.patch
-netfilter/0001-netfilter-Add-netfilter-nf_tables-fullcone-support.patch
+# XanMod patches excluded for Linux 7.2 after diagnostic verification.
