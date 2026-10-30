@@ -3,4 +3,4 @@
 version=6.12.113
 arch=x86_64
 diagnostic=false
-# rebuild 7: base generation mv bug fixed
+# rebuild 8: publish base source, fixed artifact glob
