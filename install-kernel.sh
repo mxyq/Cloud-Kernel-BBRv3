@@ -57,7 +57,7 @@ DISTRO_FAMILY=""
 DISTRO_VERSION_MAJOR=""
 RPM_ARCH=""
 TRUSTED_GPG_FINGERPRINT=${CLOUD_KERNEL_GPG_FINGERPRINT:-}
-RELEASE_SIGNING_FINGERPRINT="AFD6BDBFEBB9105077C4CA41399953F30E337E5E"
+RELEASE_SIGNING_FINGERPRINT="2519AD336893598E55ABA3D882ED55539DBCF5E9"
 SIGNING_PUBLIC_KEY_NAME="cloud-kernel-signing.asc"
 APK_PUBLIC_KEY_NAME="cloud-kernel-bbrv3.rsa.pub"
 CHECKSUM_MANIFEST_NAME="SHA256SUMS"
@@ -995,6 +995,13 @@ fetch_releases() {
         asset_upload_time="${asset_upload_time/T/ }"
         asset_upload_time="${asset_upload_time%Z}"
         base_tag="${tag%-arm64}"
+        base_series="${base_tag%.*}"
+
+        # Releases from series that were dropped from this project (e.g. a
+        # historical 6.18 build) stay published but are no longer offered.
+        if ! is_supported_series "$base_series"; then
+            continue
+        fi
 
         if [ "$SELECT_LATEST" = true ]; then
             # Newest release regardless of series; skip tags that are not a
@@ -1015,8 +1022,10 @@ fetch_releases() {
 
     if [ "$SELECT_LATEST" = true ] && [ "${#filtered_releases[@]}" -gt 0 ]; then
         # Order by kernel version, not by upload time.
+        # Note: plain "sort -V -r" over the whole line. The -t'|' -k1,1V
+        # combination mis-sorts on some systems (7.2.13 after 6.12.113).
         mapfile -t filtered_releases < <(
-            printf '%s\n' "${filtered_releases[@]}" | sort -t'|' -k1,1V -r
+            printf '%s\n' "${filtered_releases[@]}" | sort -V -r
         )
     fi
 
@@ -1058,7 +1067,9 @@ fetch_releases() {
     fi
 
     # Automatic mode installs the latest release within the selected series
-    if [ "$COMMAND" = "install" ]; then
+    if [ "$COMMAND" = "install" ] || [ "$SELECT_LATEST" = true ]; then
+        # 'latest' means the user already said "just give me the newest one";
+        # do not ask again with a mixed list of every series.
         SELECTED_TAG="${filtered_releases[0]%%|*}"
         print_colored "${GREEN}" "✓ $(get_string auto_install): $SELECTED_TAG"
         return
