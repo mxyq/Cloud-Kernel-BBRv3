@@ -46,7 +46,7 @@
 
 RPM 软件包面向主流的 DNF/RPM 生态，覆盖 Fedora、Red Hat Enterprise Linux、Rocky Linux、AlmaLinux、CentOS Stream 与 Oracle Linux。CI 以 Fedora 和 Rocky Linux 作为代表环境执行安装/卸载测试；其余 RPM 发行版按兼容性目标提供实验性支持。
 
-安装脚本默认安装最新版本（当前为 `7.2.13`），也可指定任一受维护系列。`check-upstream.yml` 每日检查各系列是否有新的 Debian 上游版本，仅当对应架构尚未发布该版本时才触发构建。
+安装脚本默认按内核版本号安装目前最高的可用版本（当前为 `7.2.13`，不依赖 GitHub Releases 页面的 `latest` 标记），也可指定任一受维护系列。`check-upstream.yml` 每日检查各系列是否有新的 Debian 上游版本，仅当对应架构尚未发布该版本时才触发构建。
 
 > [!IMPORTANT]
 > **内核后缀变更提醒**：自最近一次发布起，本项目的内核默认带 `-cloudy` 后缀（`CONFIG_LOCALVERSION="-cloudy"`）。
@@ -57,7 +57,7 @@ RPM 软件包面向主流的 DNF/RPM 生态，覆盖 Fedora、Red Hat Enterprise
 本仓库基于同一份打过补丁、完成配置解析的源码，自动构建多种格式的内核软件包：
 - 采用 Linux 内核官方源码（6.12 / 7.2 系列，来自 [kernel.org](https://www.kernel.org/)）
 - 集成 Debian 内核团队维护的补丁（来自 [kernel-team/linux](https://salsa.debian.org/kernel-team/linux/)）
-- 上述外置补丁源（Debian 内核、XanMod、AmneziaWG）统一以 Git submodule 固定在 `vendor/` 下，由 `.gitmodules` 声明来源；构建时按上游最新树浅拉取，具体版本仍由内核版本号与 `source.env` 锁定，并写入 `build-manifest.json`
+- 外置源码（Debian 内核、XanMod、AmneziaWG）通过 `vendor/` 下的 Git submodule 声明；构建优先浅拉取仓库固定的 submodule 提交，只有该提交不可用时才回退到上游 head。Debian 补丁按内核版本 tag、AmneziaWG 按 `source.env` 锁定，解析出的提交版本写入 `build-manifest.json`
 - **BBR 拥塞控制算法增强**
   - **BBRv3**：Google 的新一代拥塞控制算法（来自 [xanmod/linux-patches](https://gitlab.com/xanmod/linux-patches)），已内置并设为默认
   - **BBRv1**：保留原版算法，将拥塞控制算法设为 `bbr1` 即可使用
@@ -71,7 +71,7 @@ RPM 软件包面向主流的 DNF/RPM 生态，覆盖 Fedora、Red Hat Enterprise
 
 | 组件 | 详细信息 |
 | --- | --- |
-| 内核基础 | 6.1 / 6.12 / 7.2 系列，并集成 Debian 团队补丁 |
+| 内核基础 | 6.12 / 7.2 系列，并集成 Debian 团队补丁 |
 | 网络优化 | BBRv3（内置并设为默认）/ BBRPlus / BBRv1（模块形式），AmneziaWG 内核模块，默认使用 `sch_fq` qdisc |
 | CPU 调度器 | 上游 EEVDF 公平调度器 |
 | 内存策略 | THP 使用 `madvise` 模式；禁用 autogroup，关闭 NUMA 默认均衡 |
@@ -97,12 +97,12 @@ wget https://raw.githubusercontent.com/mxyq/Cloud-Kernel-BBRv3/main/install-kern
 chmod +x install-kernel.sh
 
 # 可选：钉扎项目当前的 OpenPGP 主密钥完整指纹（推荐）
-export CLOUD_KERNEL_GPG_FINGERPRINT="AFD6BDBFEBB9105077C4CA41399953F30E337E5E"
+export CLOUD_KERNEL_GPG_FINGERPRINT="2519AD336893598E55ABA3D882ED55539DBCF5E9"
 
 # 交互式安装（推荐新用户使用）
 ./install-kernel.sh
 
-# 自动安装最新版本
+# 自动安装版本号最高的可用内核
 ./install-kernel.sh install
 
 # 安装 6.12 系列的最新内核，并使用英文界面
@@ -124,10 +124,10 @@ export CLOUD_KERNEL_GITHUB_MIRROR="https://<your-trusted-github-proxy>"
 - 全局参数
   - `-l, --language`：设置语言（zh/en），默认为中文
 - 命令
-  - `install`：直接安装所选系列的最新内核；未指定系列时默认安装最新版本
+  - `install`：直接安装所选系列的最高版本；未指定系列时默认安装所有受维护系列中版本号最高的内核
   - `help`：显示帮助信息
 - `install` 命令参数
-  - `-s, --series, --kernel-series`：选择内核系列（`6.12` 或 `7.2`）
+  - `-s, --series, --kernel-series`：选择内核系列（`6.12`、`7.2` 或 `latest`）
   - `-v, --version`：指定完整的内核版本；未指定系列时自动从版本号推断
   - `-a, --no-reboot`：安装后不自动重启
   - `--signing-fingerprint`：可选；指定可信 OpenPGP 完整指纹，也可设置 `CLOUD_KERNEL_GPG_FINGERPRINT`
@@ -137,7 +137,7 @@ export CLOUD_KERNEL_GITHUB_MIRROR="https://<your-trusted-github-proxy>"
 项目当前默认的 OpenPGP 主密钥完整指纹为：
 
 ```text
-AFD6BDBFEBB9105077C4CA41399953F30E337E5E
+2519AD336893598E55ABA3D882ED55539DBCF5E9
 ```
 
 若不设置指纹，安装脚本仍会验证 Release manifest、校验和与软件包签名，但不会钉扎公钥身份；建议通过可信渠道核对并设置上述指纹，防止 Release 公钥与发布产物被同时替换。

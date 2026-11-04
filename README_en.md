@@ -46,7 +46,7 @@ Supported systems:
 
 RPM packages are available for Fedora, Red Hat Enterprise Linux, Rocky Linux, AlmaLinux, CentOS Stream, and Oracle Linux. CI runs installation and removal checks on Fedora and Rocky Linux; the other RPM distributions are experimental compatibility targets.
 
-The installer installs the newest release by default (currently `7.2.13`), but you can choose any maintained series. Each day, `check-upstream.yml` checks every series for a newer Debian upstream release and triggers a build only when that version has not yet been published for the target architecture.
+By default, the installer selects the highest available kernel version (currently `7.2.13`), independent of GitHub Releases' `latest` marker. You can also choose any maintained series. Each day, `check-upstream.yml` checks every series for a newer Debian upstream release and triggers a build only when that version has not yet been published for the target architecture.
 
 > [!IMPORTANT]
 > **Kernel suffix change**: recent releases carry a `-cloudy` suffix by default (`CONFIG_LOCALVERSION="-cloudy"`).
@@ -57,7 +57,7 @@ The installer installs the newest release by default (currently `7.2.13`), but y
 This repository builds every package format from the same patched, fully configured kernel source tree:
 - Uses official Linux kernel source for the 6.12 and 7.2 series from [kernel.org](https://www.kernel.org/)
 - Applies patches maintained by the Debian kernel team from [kernel-team/linux](https://salsa.debian.org/kernel-team/linux/)
-- Every external patch source (Debian kernel, XanMod, AmneziaWG) is pinned as a Git submodule under `vendor/` and declared in `.gitmodules`; builds fetch the upstream head shallowly, while the exact revision is fixed by the kernel version and `source.env` and recorded in `build-manifest.json`
+- External sources (Debian kernel, XanMod, AmneziaWG) are declared as Git submodules under `vendor/`. Builds shallow-fetch the submodule revisions pinned by this repository, falling back to upstream heads only when a pinned commit is unavailable. Debian patches are selected by kernel-version tag, AmneziaWG is pinned in `source.env`, and resolved revisions are recorded in `build-manifest.json`
 - **BBR congestion control options**
   - **BBRv3**: Google's next-generation congestion control algorithm, sourced from [xanmod/linux-patches](https://gitlab.com/xanmod/linux-patches), built in, and enabled by default
   - **BBRv1**: the original algorithm remains available as `bbr1`
@@ -71,7 +71,7 @@ This repository builds every package format from the same patched, fully configu
 
 | Component | Details |
 | --- | --- |
-| Kernel base | 6.1 / 6.12 / 7.2 series with Debian kernel team patches |
+| Kernel base | 6.12 / 7.2 series with Debian kernel team patches |
 | Networking | BBRv3 built in and enabled by default; BBRPlus and BBRv1 as modules; AmneziaWG as a kernel module; `sch_fq` as the default qdisc |
 | CPU scheduler | Upstream EEVDF fair scheduler |
 | Memory policy | THP in `madvise` mode; autogroup and automatic NUMA balancing disabled |
@@ -97,12 +97,12 @@ wget https://raw.githubusercontent.com/mxyq/Cloud-Kernel-BBRv3/main/install-kern
 chmod +x install-kernel.sh
 
 # Optional: pin the project's current full OpenPGP primary-key fingerprint (recommended)
-export CLOUD_KERNEL_GPG_FINGERPRINT="AFD6BDBFEBB9105077C4CA41399953F30E337E5E"
+export CLOUD_KERNEL_GPG_FINGERPRINT="2519AD336893598E55ABA3D882ED55539DBCF5E9"
 
 # Interactive installation (recommended for new users)
 ./install-kernel.sh
 
-# Automatically install the newest release
+# Automatically install the highest available kernel version
 ./install-kernel.sh install
 
 # Install the latest kernel from the 6.12 series with an English interface
@@ -125,10 +125,10 @@ Options and commands:
 - Global options
   - `-l, --language`: Set language (zh/en), defaults to Chinese
 - Commands
-  - `install`: Directly install the latest kernel in the selected series; defaults to the newest release
+  - `install`: Install the highest version in the selected series; without a series, defaults to the highest version across maintained series
   - `help`: Display help information
 - `install` options
-  - `-s, --series, --kernel-series`: Select a kernel series (`6.12` or `7.2`)
+  - `-s, --series, --kernel-series`: Select a kernel series (`6.12`, `7.2`, or `latest`)
   - `-v, --version`: Specify a full kernel version; the series is inferred when omitted
   - `-a, --no-reboot`: Skip reboot after installation
   - `--signing-fingerprint`: Optional trusted full OpenPGP fingerprint; `CLOUD_KERNEL_GPG_FINGERPRINT` is also supported
@@ -138,7 +138,7 @@ Options and commands:
 The project's current OpenPGP primary-key fingerprint is:
 
 ```text
-AFD6BDBFEBB9105077C4CA41399953F30E337E5E
+2519AD336893598E55ABA3D882ED55539DBCF5E9
 ```
 
 If no fingerprint is set, the installer still verifies the release manifest, checksums, and package signatures, but it cannot pin the public key's identity. Verify the fingerprint through a trusted channel and set it to protect against simultaneous replacement of the release key and release artifacts.
