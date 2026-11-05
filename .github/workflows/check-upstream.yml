@@ -85,10 +85,10 @@ jobs:
       - name: Check Series Is Ready
         id: check_series_ready
         run: |
-          if [ -d "kernel_patches/${{ matrix.series }}" ] && [ -d "custom_configs/${{ matrix.series }}" ]; then
+          if [ -d "custom_configs/${{ matrix.series }}" ]; then
             echo "READY=true" >> "$GITHUB_OUTPUT"
           else
-            echo "⏭️ Skipping ${{ matrix.series }}: kernel_patches/custom_configs not prepared yet"
+            echo "⏭️ Skipping ${{ matrix.series }}: custom_configs not prepared yet"
             echo "READY=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -142,8 +142,23 @@ jobs:
             echo "BUILD_NEEDED=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check Matching Kernel Patches
+        id: check_patches
+        if: steps.check_x86_64.outputs.BUILD_NEEDED == 'true' || steps.check_arm64.outputs.BUILD_NEEDED == 'true'
+        env:
+          KERNEL_SERIES: ${{ matrix.series }}
+        run: |
+          patch_file=$(find "kernel_patches/$KERNEL_SERIES" -type f -name '*.patch' -print -quit 2>/dev/null || true)
+          if [ -n "$patch_file" ]; then
+            echo "✅ Found a matching kernel patch: $patch_file"
+            echo "PATCHES_READY=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "⏭️ Skipping build: no kernel patch found for series $KERNEL_SERIES"
+            echo "PATCHES_READY=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Trigger x86_64 Build Workflow if needed
-        if: steps.check_x86_64.outputs.BUILD_NEEDED == 'true'
+        if: steps.check_x86_64.outputs.BUILD_NEEDED == 'true' && steps.check_patches.outputs.PATCHES_READY == 'true'
         uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -151,7 +166,7 @@ jobs:
           client-payload: '{"kernel_version": "${{ steps.get_kernel_version.outputs.KERNEL_VERSION }}"}'
 
       - name: Trigger arm64 Build Workflow if needed
-        if: steps.check_arm64.outputs.BUILD_NEEDED == 'true'
+        if: steps.check_arm64.outputs.BUILD_NEEDED == 'true' && steps.check_patches.outputs.PATCHES_READY == 'true'
         uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -167,4 +182,5 @@ jobs:
             echo "- ⚡ Force Build: ${{ needs.prepare.outputs.force_build }}"
             echo "- 🔄 x86_64 Build Needed: ${{ steps.check_x86_64.outputs.BUILD_NEEDED }}"
             echo "- 🔄 arm64 Build Needed: ${{ steps.check_arm64.outputs.BUILD_NEEDED }}"
+            echo "- 🩹 Matching Patches Ready: ${{ steps.check_patches.outputs.PATCHES_READY || 'not required' }}"
           } >> "$GITHUB_STEP_SUMMARY"
