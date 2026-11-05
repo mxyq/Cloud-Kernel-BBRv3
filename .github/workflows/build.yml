@@ -194,8 +194,16 @@ jobs:
         run: |
           asset="linux-${KERNEL_VERSION}-debian-base.tar.xz"
           out="$RUNNER_TEMP/$asset"
-          if gh release view "$KERNEL_VERSION" --json assets \
-              --jq '.assets[].name' 2>/dev/null | grep -qx "$asset"; then
+          if release_assets=$(gh release view "$KERNEL_VERSION" --json assets \
+              --jq '.assets[].name' 2>/dev/null); then
+            release_exists=true
+          else
+            release_assets=''
+            release_exists=false
+            echo "::notice title=Release unavailable::GitHub Release $KERNEL_VERSION is unavailable; the base source will only be uploaded as a workflow artifact."
+          fi
+
+          if [ "$release_exists" = true ] && printf '%s\n' "$release_assets" | grep -Fxq "$asset"; then
             echo "Base source already published; downloading it."
             gh release download "$KERNEL_VERSION" --pattern "$asset" --output "$out"
             gh release download "$KERNEL_VERSION" --pattern "$asset.sha256" \
@@ -216,8 +224,12 @@ jobs:
               exit 1
             fi
             sha256sum "$out" > "$out.sha256"
-            gh release upload "$KERNEL_VERSION" "$out" "$out.sha256" --clobber
-            echo "Published base source asset for $KERNEL_VERSION"
+            if [ "$release_exists" = true ]; then
+              gh release upload "$KERNEL_VERSION" "$out" "$out.sha256" --clobber
+              echo "Published base source asset for $KERNEL_VERSION"
+            else
+              echo "Skipping release upload; base source is available as a workflow artifact."
+            fi
           fi
 
       - name: Upload base source artifact
