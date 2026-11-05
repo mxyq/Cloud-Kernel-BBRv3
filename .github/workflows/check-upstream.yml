@@ -20,6 +20,11 @@ on:
         required: false
         default: true
         type: boolean
+      check_latest_stable:
+        description: "Discover and check the latest non-EOL stable series"
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   prepare:
@@ -36,25 +41,47 @@ jobs:
           FORCE_BUILD_INPUT: ${{ inputs.force_build }}
           CHECK_6_12: ${{ inputs.check_6_12 }}
           CHECK_7_2: ${{ inputs.check_7_2 }}
+          CHECK_LATEST_STABLE: ${{ inputs.check_latest_stable }}
         run: |
+          latest_stable_version=$(curl --fail --location --silent --show-error \
+            --retry 3 --connect-timeout 30 https://www.kernel.org/releases.json \
+            | jq -r '[.releases[]
+              | select(.moniker == "stable" and .iseol == false)
+              | .version
+              | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))][0] // empty')
+          if [ -z "$latest_stable_version" ]; then
+            echo "❌ Failed to discover the latest non-EOL stable kernel release from kernel.org" >&2
+            exit 1
+          fi
+          latest_stable_series=$(printf '%s' "$latest_stable_version" | cut -d. -f1-2)
+          echo "✅ Latest non-EOL stable kernel release: $latest_stable_version ($latest_stable_series)"
+
           if [ "$EVENT_NAME" = "schedule" ]; then
-            selected_series=("6.12" "7.2")
+            selected_series=("6.12" "7.2" "$latest_stable_series")
             force_build=false
           else
             selected_series=()
             [ "$CHECK_6_12" = "true" ] && selected_series+=("6.12")
             [ "$CHECK_7_2" = "true" ] && selected_series+=("7.2")
+            [ "$CHECK_LATEST_STABLE" = "true" ] && selected_series+=("$latest_stable_series")
             force_build="$FORCE_BUILD_INPUT"
           fi
 
           if [ "${#selected_series[@]}" -eq 0 ]; then
-            echo "❌ Select at least one kernel series"
+            echo "❌ Select at least one kernel series or enable latest stable discovery"
             exit 1
           fi
 
           series_json="["
           separator=""
+          unique_series=()
           for series in "${selected_series[@]}"; do
+            duplicate=false
+            for existing in "${unique_series[@]}"; do
+              [ "$series" = "$existing" ] && duplicate=true && break
+            done
+            [ "$duplicate" = true ] && continue
+            unique_series+=("$series")
             series_json+="${separator}\"${series}\""
             separator=","
           done
@@ -87,10 +114,11 @@ jobs:
       - name: Check Series Is Ready
         id: check_series_ready
         run: |
-          if [ -d "custom_configs/${{ matrix.series }}" ]; then
+          if [ -d "custom_configs/${{ matrix.series }}" ] \
+              && [ -d "kernel_patches/${{ matrix.series }}" ]; then
             echo "READY=true" >> "$GITHUB_OUTPUT"
           else
-            echo "⏭️ Skipping ${{ matrix.series }}: custom_configs not prepared yet"
+            echo "⏭️ Skipping ${{ matrix.series }}: kernel_patches and/or custom_configs are not prepared yet"
             echo "READY=false" >> "$GITHUB_OUTPUT"
           fi
 
