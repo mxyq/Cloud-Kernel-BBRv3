@@ -46,7 +46,7 @@
 
 RPM 软件包面向主流的 DNF/RPM 生态，覆盖 Fedora、Red Hat Enterprise Linux、Rocky Linux、AlmaLinux、CentOS Stream 与 Oracle Linux。CI 以 Fedora 和 Rocky Linux 作为代表环境执行安装/卸载测试；其余 RPM 发行版按兼容性目标提供实验性支持。
 
-安装脚本默认按内核版本号安装目前最高的可用版本（当前为 `7.2.13`，不依赖 GitHub Releases 页面的 `latest` 标记），也可指定任一受维护系列。`check-upstream.yml` 每日检查各系列是否有新的 Debian 上游版本，仅当对应架构尚未发布该版本时才触发构建。
+安装脚本默认按内核版本号安装目前最高的可用版本（当前为 `7.2.13`，不依赖 GitHub Releases 页面的 `latest` 标记），也可指定任一受维护系列。`check-upstream.yml` 每日检查各系列的 Debian 上游版本；只有对应架构尚未发布该版本，且 `kernel_patches/<系列>/` 中存在补丁时，才会触发构建。
 
 > [!IMPORTANT]
 > **内核后缀变更提醒**：自最近一次发布起，本项目的内核默认带 `-cloudy` 后缀（`CONFIG_LOCALVERSION="-cloudy"`）。

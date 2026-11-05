@@ -46,7 +46,7 @@ Supported systems:
 
 RPM packages are available for Fedora, Red Hat Enterprise Linux, Rocky Linux, AlmaLinux, CentOS Stream, and Oracle Linux. CI runs installation and removal checks on Fedora and Rocky Linux; the other RPM distributions are experimental compatibility targets.
 
-By default, the installer selects the highest available kernel version (currently `7.2.13`), independent of GitHub Releases' `latest` marker. You can also choose any maintained series. Each day, `check-upstream.yml` checks every series for a newer Debian upstream release and triggers a build only when that version has not yet been published for the target architecture.
+By default, the installer selects the highest available kernel version (currently `7.2.13`), independent of GitHub Releases' `latest` marker. You can also choose any maintained series. Each day, `check-upstream.yml` checks Debian upstream versions and triggers a build only when the version has not yet been published for the target architecture and a patch exists under `kernel_patches/<series>/`.
 
 > [!IMPORTANT]
 > **Kernel suffix change**: recent releases carry a `-cloudy` suffix by default (`CONFIG_LOCALVERSION="-cloudy"`).

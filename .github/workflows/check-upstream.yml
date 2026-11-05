@@ -71,6 +71,8 @@ jobs:
     name: Check Kernel Versions (${{ matrix.series }})
     runs-on: ubuntu-24.04
     needs: prepare
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
